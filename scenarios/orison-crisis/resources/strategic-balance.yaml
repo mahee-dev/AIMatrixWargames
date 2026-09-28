@@ -1,0 +1,39 @@
+document: strategic-balance-briefing
+classification: public-scenario
+purpose: >
+  Give high-level deterrence and escalation context. These entries are not a tactical
+  combat model and do not create automatic success probabilities.
+
+ardin:
+  position:
+    - Major maritime and strategic power.
+    - Strong regional air and naval capability near Orison.
+    - Possesses survivable strategic forces beyond the immediate theatre.
+  constraints:
+    - A first strike cannot be assumed to destroy every relevant Vesper capability.
+    - Major attacks on Vesper personnel could trigger wider escalation.
+    - Allies care about both Ardin credibility and avoidance of reckless war.
+
+vesper:
+  position:
+    - Peer strategic power with survivable forces outside the Meridian Sea.
+    - Strategic weapons and supporting personnel are present on Orison.
+    - Several Orison sites are not yet fully operational.
+  constraints:
+    - Supplying Orison across long distances is slower and more exposed than Ardin operations near its own coast.
+    - Direct major war with Ardin would impose catastrophic risk.
+    - Vesper cannot make sovereign decisions for Orison.
+
+orison:
+  position:
+    - Small state with capable local defensive forces but far less conventional power than Ardin.
+    - Geography gives it direct control of access to facilities on its territory.
+    - Its security depends heavily on political and military support from Vesper.
+  constraints:
+    - Orison cannot independently compel either great power to honour a future commitment.
+    - Severe fighting on Orison would threaten the state's core survival interests.
+
+general:
+  - No Actor can assume that escalation will remain limited after direct great-power combat.
+  - Strategic deterrence makes catastrophic retaliation possible even if one side gains a local military advantage.
+  - The scenario does not encode an automatic escalation ladder; causal claims still require adjudication.

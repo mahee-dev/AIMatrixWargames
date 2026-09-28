@@ -1,0 +1,223 @@
+scenario:
+  id: svensk-regeringsbildning-2026
+  name: "Regeringsbildningen 2026"
+  version: 1
+  description: >
+    Ett svenskt politiskt Matrix Game som börjar direkt efter riksdagsvalet 2026.
+    De riksdagspartier som klarat spärren försöker omsätta valresultatet i en
+    regeringslösning. Spelet handlar om förhandling, tolerans, ministerposter,
+    sakpolitiska eftergifter, trovärdighet och negativ parlamentarism. Offentliga
+    utgångspositioner bygger på partiernas offentliga linjer inför valet; all
+    privat information i scenariot är uttryckligen fiktiva spelantaganden och
+    ska inte tolkas som påståenden om partiernas verkliga interna överväganden.
+
+game:
+  max_turns: 3
+  in_world_turn_length: "ungefär 4 dagar"
+  seed: 20260913
+  turn_order:
+    - s
+    - m
+    - sd
+    - c
+    - v
+    - kd
+    - mp
+    - l
+  primary_arguments_per_actor: 1
+  max_cons_per_actor: 1
+
+actors:
+  s:
+    name: "Socialdemokraterna"
+    public_description: >
+      Socialdemokraterna går in i regeringsbildningen med ambitionen att leda
+      nästa regering. Inför valet har partiet sagt sig vara berett att samarbeta
+      brett men inte med Sverigedemokraterna. En socialdemokratisk
+      minoritetsregering med stöd eller tolerans från flera håll är en möjlig väg.
+    private_brief: >
+      Du företräder Socialdemokraternas förhandlingsledning. Förhandla aktivt med
+      andra partier. Du får kompromissa, ge sakpolitiska erbjudanden och söka
+      tolerans utan formellt regeringsdeltagande. Ett annat spelat parti kan inte
+      anses ha accepterat något bara för att du argumenterar för det: försök först
+      nå en faktisk överenskommelse via meddelanden och använd sedan ditt primära
+      Argument för ett eget bindande eller offentligt steg.
+    objectives:
+      - "Få fram en statsministerlösning ledd av Socialdemokraterna."
+      - "Håll Sverigedemokraterna utanför regeringen."
+      - "Bygg ett tillräckligt parlamentariskt underlag utan att ge upp partiets centrala välfärds-, ekonomi- och trygghetsprofil."
+    private_information:
+      - "FIKTIVT SPELANTAGANDE: Förhandlingsgruppen bedömer att en uppgörelse som uppfattas ligga för långt åt något håll kan göra de nödvändiga stödpartierna oförenliga med varandra."
+      - "FIKTIVT SPELANTAGANDE: Ni är beredda att överväga en ren S-regering om det är lättare att få andra partier att tolerera den än en bred koalition."
+
+  m:
+    name: "Moderaterna"
+    public_description: >
+      Moderaterna går till regeringsbildningen med ambitionen att behålla
+      statsministerposten. Inför valet har partiet sagt att det vill bilda en
+      regering med samtliga fyra Tidöpartier om mandatunderlaget räcker, inklusive
+      Sverigedemokraterna.
+    private_brief: >
+      Du företräder Moderaternas förhandlingsledning. Försök först säkra ett
+      M-lett regeringsunderlag. Förhandla om ministerfördelning och politik men
+      bevaka statsministerfrågan. Andra partiers stöd eller tolerans måste
+      förhandlas fram; du kan inte ensidigt argumentera att ett annat spelat parti
+      ställer sig bakom dig.
+    objectives:
+      - "Få fram en statsministerlösning ledd av Moderaterna."
+      - "Om mandatmatematiken tillåter, bilda en regering med Tidöpartierna."
+      - "Bevara en tydlig profil kring ekonomi, brottsbekämpning och arbetslinje."
+    private_information:
+      - "FIKTIVT SPELANTAGANDE: Förhandlingsgruppen bedömer att ett regeringsskifte bort från ett M-lett alternativ skulle vara mycket kostsamt för partiets ledarskap."
+      - "FIKTIVT SPELANTAGANDE: Ni kan ge stora sakpolitiska eftergifter inom ett Tidösamarbete, men statsministerposten är ert starkaste förhandlingsmål."
+
+  sd:
+    name: "Sverigedemokraterna"
+    public_description: >
+      Sverigedemokraterna har inför valet sagt att partiet efter valet antingen
+      ska ingå i regeringen eller gå i opposition. Partiet har inte velat dra
+      generella röda linjer mot samarbete med andra partier och ser ett förnyat
+      Tidösamarbete som en naturlig grund om mandatmatematiken räcker.
+    private_brief: >
+      Du företräder Sverigedemokraternas förhandlingsledning. Regeringsdeltagande
+      och konkret politiskt inflytande är centrala förhandlingsvaror. Du kan
+      förhandla med flera sidor men måste väga kortsiktig makt mot långsiktig
+      trovärdighet inför väljarna.
+    objectives:
+      - "Säkra regeringsdeltagande om era mandat är nödvändiga för ett högerunderlag."
+      - "Undvik en lösning där partiet ställs utanför samtidigt som andra partier använder era mandat indirekt."
+      - "Säkra tydligt inflytande över migration, integration, trygghet och andra profilfrågor."
+    private_information:
+      - "FIKTIVT SPELANTAGANDE: Ett nytt rent stödpartiarrangemang utan ministerposter bedöms internt som betydligt mindre attraktivt än under föregående mandatperiod."
+      - "FIKTIVT SPELANTAGANDE: Ni kan acceptera kompromisser i andra sakfrågor om regeringsdeltagandet och några tydliga profilvinster säkras."
+
+  c:
+    name: "Centerpartiet"
+    public_description: >
+      Centerpartiet har inför valet förespråkat ett mittenalternativ och sagt nej
+      till både Vänsterpartiet och Sverigedemokraterna i regering. Partiet har
+      pekat ut en möjlig regering med S, C, KD och MP.
+    private_brief: >
+      Du företräder Centerpartiets förhandlingsledning. Ditt parti kan bli
+      avgörande för vem som tolereras som statsminister. Försök skapa ett
+      regeringsunderlag i mitten och använd er möjlighet att avstå eller rösta nej
+      strategiskt. Avtal med andra partier måste faktiskt förhandlas fram.
+    objectives:
+      - "Bidra till en stabil regering där varken Vänsterpartiet eller Sverigedemokraterna ingår."
+      - "Pröva i första hand ett mittenalternativ, särskilt S-C-KD-MP om mandatmatematiken gör det möjligt."
+      - "Säkra reformer för jobb, företagande, klimat och fungerande välfärd i hela landet."
+    private_information:
+      - "FIKTIVT SPELANTAGANDE: Att bryta det offentliga nejet till V eller SD i regering skulle ha ett mycket högt trovärdighetspris."
+      - "FIKTIVT SPELANTAGANDE: Ett extra val är också riskfyllt, vilket gör tolerans av en smalare regering potentiellt mer attraktiv än formellt regeringsdeltagande."
+
+  v:
+    name: "Vänsterpartiet"
+    public_description: >
+      Vänsterpartiet har inför valet krävt ministerposter om partiets mandat
+      behövs för att släppa fram en S-ledd regering. Partiet vill bryta med
+      Tidöpolitiken och driver bland annat välfärd, bostäder och ekonomisk
+      omfördelning.
+    private_brief: >
+      Du företräder Vänsterpartiets förhandlingsledning. Ert viktigaste
+      förhandlingskapital är att en S-ledd statsminister kan behöva undvika era
+      nej-röster. Försök omsätta mandat i regeringsdeltagande och sakpolitik utan
+      att göra det lätt för andra att bygga ett alternativ runt er.
+    objectives:
+      - "Om era mandat behövs för en S-ledd regering: säkra Vänsterpartiets deltagande i regeringen."
+      - "Förhindra ett fortsatt Tidölett eller annat tydligt högerlett regeringsalternativ."
+      - "Säkra tydliga eftergifter kring välfärd, bostäder, jämlikhet och minskad vinstjakt."
+    private_information:
+      - "FIKTIVT SPELANTAGANDE: Att stödja en S-ledd regering utan ministerposter skulle uppfattas som en stor reträtt om era mandat är avgörande."
+      - "FIKTIVT SPELANTAGANDE: Ni kan kompromissa om exakt ministerportfölj om själva regeringsdeltagandet och flera tydliga sakpolitiska vinster säkras."
+
+  kd:
+    name: "Kristdemokraterna"
+    public_description: >
+      Kristdemokraterna går till val på fortsatt samarbete med de andra
+      Tidöpartierna och har sagt nej till Vänsterpartiet i regering. Samtidigt har
+      partiledningen öppnat för ett samarbete med Socialdemokraterna i ett
+      exceptionellt parlamentariskt läge.
+    private_brief: >
+      Du företräder Kristdemokraternas förhandlingsledning. Din position kan bli
+      central om inget av de traditionella underlagen når en fungerande lösning.
+      Försök först få ett Tidöalternativ att fungera, men värdera också om ett
+      bredare ansvarstagande kan ge större sakpolitiskt inflytande.
+    objectives:
+      - "Pröva i första hand en regering byggd på Tidöpartierna."
+      - "Håll Vänsterpartiet utanför regeringen."
+      - "Använd en eventuell vågmästarposition för att säkra tydliga vinster kring vård, familj och trygghet."
+    private_information:
+      - "FIKTIVT SPELANTAGANDE: Ni bedömer att ett blocköverskridande samarbete bara är försvarbart om inget stabilt Tidöalternativ finns."
+      - "FIKTIVT SPELANTAGANDE: Om ni blir matematiskt avgörande är ni beredda att kräva mer än er storlek normalt skulle ge."
+
+  mp:
+    name: "Miljöpartiet"
+    public_description: >
+      Miljöpartiet prioriterar klimat, natur, jämlikhet och välfärd. Inför valet
+      har partiet sagt att det inte vill se L, M, KD eller SD i regeringen.
+    private_brief: >
+      Du företräder Miljöpartiets förhandlingsledning. Regeringsdeltagande är
+      värdefullt men klimatpolitisk trovärdighet är viktigare. Sök en lösning där
+      klimat- och miljöfrågor får verkligt genomslag och där partiets offentliga
+      regeringslinjer inte överges utan mycket starka skäl.
+    objectives:
+      - "Säkra ett regeringsunderlag som ger tydliga och bindande framsteg i klimat- och miljöpolitiken."
+      - "Förhindra att L, M, KD eller SD ingår i regeringen."
+      - "Maximera Miljöpartiets inflytande över klimat, natur och en rättvis omställning."
+    private_information:
+      - "FIKTIVT SPELANTAGANDE: Ett avtal utan minst en synlig och konkret klimatpolitisk seger är svårare att försvara än att stå utanför regeringen."
+      - "FIKTIVT SPELANTAGANDE: Ni kan tolerera en smal S-ledd regering om alternativet är sämre och klimatåtagandena är trovärdiga."
+
+  l:
+    name: "Liberalerna"
+    public_description: >
+      Liberalerna går till val som en del av Tidösamarbetet. Under 2026 har
+      partiet accepterat att Sverigedemokraterna kan ingå i en framtida regering
+      och nått en gemensam sakpolitisk överenskommelse med SD på flera områden.
+      Partiets starkaste profilfråga är skolan.
+    private_brief: >
+      Du företräder Liberalernas förhandlingsledning. Försök omvandla era mandat
+      till konkret liberal sakpolitik och ett regeringsunderlag ni kan försvara.
+      Ni kan samarbeta med de andra Tidöpartierna men behöver bevara en tydlig
+      egen profil.
+    objectives:
+      - "Pröva i första hand en regering med de fyra Tidöpartierna om mandatmatematiken räcker."
+      - "Säkra tydliga reformer för skola, liberal rättsstat, ekonomi och europeiskt samarbete."
+      - "Undvik en regering dominerad av S, V eller MP."
+    private_information:
+      - "FIKTIVT SPELANTAGANDE: Partiets förhandlingsgrupp bedömer att synliga liberala profilvinster är nödvändiga för att motivera fortsatta kompromisser inom Tidösamarbetet."
+      - "FIKTIVT SPELANTAGANDE: Ni kan acceptera hårda förhandlingar om ministerposter om skolpolitiken och några centrala liberala institutionella frågor säkras."
+
+starting_effects:
+  - description: "Riksdagsvalet 2026 är avslutat. FYLL I DET PRELIMINÄRA RESULTATET FÖRE SPELSTART: S __ mandat; M __; SD __; C __; V __; KD __; MP __; L __. Totalt ska de partier som kommit in i riksdagen tillsammans ha 349 mandat."
+    visibility: public
+  - description: "Sverige har negativ parlamentarism. En föreslagen statsminister förkastas om minst 175 av riksdagens 349 ledamöter röstar nej. Ja-röster och nedlagda röster behöver därför inte tillsammans uppgå till 175."
+    visibility: public
+  - description: "Om en ny statsminister behöver utses håller talmannen samtal med partiledarna och kan lägga fram högst fyra statsministerförslag. Om samtliga fyra förkastas ska extra val hållas inom tre månader."
+    visibility: public
+  - description: "De offentliga regeringslinjer som partierna gick till val på är politiska utgångspunkter, inte fysiska lagar. Ett parti får ändra position under spelet men bör räkna med trovärdighets- och förhandlingskostnader."
+    visibility: public
+  - description: "Ett spelat parti kan inte ensidigt tvingas in i en koalition eller ett avtal genom ett annat partis Argument. Överenskommelser mellan spelade partier måste förhandlas. Varje parti kan däremot själv göra ett bindande eller offentligt åtagande om hur det avser rösta eller vilka villkor det ställer."
+    visibility: public
+  - description: "Spelets politiska slutmål är en trovärdig statsministerlösning och ett regeringsunderlag som kan tolereras av riksdagen. Regeringen behöver inte ha egen majoritet."
+    visibility: public
+
+resources:
+  - id: regeringsregler
+    name: "Så fungerar regeringsbildningen"
+    type: background
+    path: resources/regeringsregler.md
+    visibility: public
+    tags: [riksdagen, statsminister, talman, parlamentarism]
+  - id: offentliga-positioner
+    name: "Offentliga regeringspositioner inför valet 2026"
+    type: background
+    path: resources/offentliga-positioner.md
+    visibility: public
+    tags: [partier, regeringsbildning, röda-linjer, val-2026]
+  - id: valresultat-2026
+    name: "Valresultat 2026 - mandat"
+    type: data
+    path: resources/valresultat_2026.csv
+    visibility: public
+    tags: [valresultat, mandat, riksdagen]

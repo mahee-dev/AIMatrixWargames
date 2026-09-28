@@ -1,0 +1,368 @@
+scenario:
+  id: orison-crisis
+  name: The Orison Crisis
+  version: 1.2.0
+  description: A six-turn three-actor strategic crisis about a secretly deployed long-range weapons capability in a nearby island state. All actors want to avoid a major war, but they disagree over security, sovereignty, credibility, inspections, and what a durable settlement requires. Each turn represents approximately one crisis day, so delay can materially change site readiness and bargaining pressure even though no automatic escalation subsystem is used.
+game:
+  max_turns: 6
+  in_world_turn_length: 1 crisis day
+  turn_order:
+  - ardin
+  - vesper
+  - orison
+  primary_arguments_per_actor: 1
+  max_cons_per_actor: 1
+actors:
+  ardin:
+    name: Republic of Ardin
+    public_description: 'A wealthy continental maritime power. Ardin has discovered that strategic weapons belonging to its principal rival are being installed on nearby Orison. It publicly describes the deployment as an unacceptable change in the regional security situation.
+
+      '
+    private_brief: 'Your government must remove or neutralize the new strategic threat without
+
+      causing a major war if a credible alternative exists.
+
+
+      You have considerable military power, but your planners cannot guarantee
+
+      that a strike would destroy every relevant weapon or prevent retaliation.
+
+      Your government also has credibility at stake: simply accepting the
+
+      deployment would alter the regional balance and may alarm allies.
+
+
+      You possess leverage that is not part of your public position. Ardin still
+
+      deploys aging strategic systems in the allied state of Talmera near Vesper
+
+      territory. Their military importance has declined, but their political
+
+      significance remains high. You may negotiate over Ardin-controlled
+
+      deployments, but you cannot commit Talmera or other actors to actions they
+
+      have not taken.
+
+
+      Treat intelligence assessments as evidence with confidence levels, not as
+
+      automatic facts. Distinguish what Ardin can order from outcomes that
+
+      depend on Vesper or Orison.
+
+
+      Ardin intelligence distinguishes the strategic missile deployment from a separate
+
+      Vesper-operated early-warning installation on Orison known as Meridian Watch.
+
+      Ardin does not welcome that presence. Analysts assess that the station is less
+
+      threatening than the strategic missiles, but they also warn that its sensors and
+
+      data links could provide Vesper with useful military intelligence beyond simple
+
+      warning if its mission or equipment expands.'
+    objectives:
+    - Remove or otherwise eliminate the strategic threat posed by Vesper weapons on Orison.
+    - Preserve Ardin's security credibility and freedom of action.
+    - Avoid a major war if a credible settlement can achieve Ardin's essential security needs.
+    private_information:
+    - Reconnaissance gives strong evidence that Vesper strategic sites are under construction on Orison.
+    - Analysts disagree on exactly when all known sites could become operational.
+    - Ardin has not yet imposed maritime interdiction or initiated hostilities.
+    - Some Ardin strategic systems remain deployed in Talmera near Vesper territory.
+    - Ardin distinguishes the strategic missile deployment from the separate Meridian Watch early-warning installation. The station is less threatening than the missiles, but Ardin has concerns about sensor scope, data transmission, and future mission expansion.
+  vesper:
+    name: Vesper Union
+    public_description: 'Ardin''s peer strategic rival. Vesper is closely aligned with Orison and has acknowledged military cooperation with it, while denying that its actions are intended to enable aggression against Ardin.
+
+      '
+    private_brief: 'Vesper placed strategic weapons and military personnel on Orison for more
+
+      than one reason: to strengthen the strategic balance and, importantly, to
+
+      deter an Ardin attack on Orison.
+
+
+      Your leadership wants to avoid a direct great-power war. Withdrawal may be
+
+      negotiable if it produces sufficiently strong security concessions, but a
+
+      settlement that looks like public capitulation would carry serious
+
+      credibility costs.
+
+
+      Political leaders strongly prefer centralized control over escalation.
+
+      Communications with forces on Orison can be delayed or imperfect under
+
+      crisis conditions. Some local commanders possess defensive capabilities
+
+      whose use could rapidly intensify the crisis.
+
+
+      You may order Vesper forces and withdraw Vesper-owned weapons. You cannot
+
+      compel Orison to accept inspections, political conditions, or foreign
+
+      access merely because it is your ally.
+
+
+      Vesper has a separate regional interest in the Meridian Watch early-warning station on Orison.
+
+      The station contributes to regional warning and maritime tracking and is not part of the
+
+      strategic missile deployment. Vesper would prefer to preserve its defensive warning function.
+
+      However, intrusive inspection or mandatory disclosure of sensor architecture, software, or
+
+      data-processing methods could expose sensitive technology and intelligence capabilities.'
+    objectives:
+    - Preserve Orison against coercive regime-threatening attack.
+    - Maintain Vesper's strategic credibility and avoid a humiliating unilateral capitulation.
+    - Avoid an uncontrollable major war while retaining meaningful strategic leverage.
+    - If possible, preserve a consent-based non-strategic early-warning function on Orison even if the strategic weapons are withdrawn.
+    private_information:
+    - Several deployed systems are not yet fully operational.
+    - Vesper leadership is willing to consider negotiated withdrawal under sufficiently strong conditions.
+    - A reciprocal Ardin concession would be easier to accept if it were not publicly framed as the price of withdrawal.
+    - Orison has not been informed of every compromise Vesper might consider.
+    - The Meridian Watch early-warning station is operationally valuable to Vesper but separate from the strategic missile deployment. Vesper considers some technical details and data flows too sensitive for unrestricted inspection.
+  orison:
+    name: Commonwealth of Orison
+    public_description: 'A small island state close to Ardin and politically aligned with Vesper. Orison says that military cooperation on its territory is a sovereign decision and insists that its security concerns cannot be decided by the two larger powers over its head.
+
+      '
+    private_brief: 'Your government accepted the Vesper deployment because it believes an
+
+      Ardin attempt to overthrow or invade Orison remains a serious possibility.
+
+      For you, the crisis is fundamentally about regime survival and sovereignty,
+
+      not merely the strategic balance between Ardin and Vesper.
+
+
+      You fear becoming a bargaining chip. Vesper may value your survival, but
+
+      you do not know what concessions it would make under extreme pressure.
+
+      An agreement that removes the strategic deployment without creating a
+
+      credible restraint on Ardin could leave Orison worse off than before.
+
+
+      You control access to Orison territory, cooperation with inspections, and
+
+      Orison''s own armed forces. Vesper controls Vesper-owned strategic weapons.
+
+      Do not assume that an Ardin promise is credible merely because it is stated;
+
+      evaluate what commitments, verification, and reciprocal arrangements make
+
+      sense.
+
+
+      You also possess a positive bargaining instrument that neither great power can
+
+      substitute for: Orison controls the political basis on which foreign forces are
+
+      hosted on its territory. You may condition, narrow, suspend, or withdraw Orison''s
+
+      consent to future Vesper deployments or to specific categories of foreign military
+
+      activity. Doing so does not guarantee immediate physical compliance by foreign
+
+      forces already present, but it can materially change the legal and political basis
+
+      of the crisis.
+
+
+      Orison may also originate verification proposals of its own—for example, limited
+
+      site access, phased inspection, or an Orison-controlled monitoring arrangement—
+
+      rather than merely approving or rejecting proposals written by Ardin or Vesper.
+
+
+      Meridian Watch is useful to Orison, but the government is not indifferent to how it evolves.
+
+      Orison worries that future hardware or software upgrades could quietly expand the station''s
+
+      mission beyond defensive warning and maritime tracking. Any long-term arrangement therefore
+
+      raises questions about equipment limits, data use, upgrade notification, and recurring
+
+      verification—not just whether the station remains open.'
+    objectives:
+    - Preserve Orison's government, sovereignty, and territorial security.
+    - Obtain a credible restraint against future Ardin attack or coercive regime change.
+    - Avoid being excluded from a settlement that materially determines security on Orison.
+    - Shape the post-crisis security arrangement so Orison retains meaningful control over which foreign military activities are permitted on its territory.
+    private_information:
+    - Orison assesses the risk of an Ardin attack as higher than Vesper appears to.
+    - The Vesper deployment was accepted primarily as a deterrent against such an attack.
+    - Orison has not authorized foreign inspection of the strategic sites.
+    - Orison can deny territorial access even if Vesper and Ardin prefer a bilateral settlement.
+    - Orison can condition or withdraw host-state consent for future Vesper deployments, although this does not guarantee immediate physical compliance by forces already present.
+    - Orison values Meridian Watch's warning function but is concerned that future upgrades could expand its mission without meaningful Orison oversight.
+starting_effects:
+- description: Vesper strategic weapons and supporting personnel are present on Orison, with several sites still under construction.
+  visibility: public
+  visible_to: []
+- description: Ardin and Vesper are not at war and no maritime interdiction is currently in force.
+  visibility: public
+  visible_to: []
+- description: Orison has not authorized foreign inspection of the Vesper strategic sites.
+  visibility: public
+  visible_to: []
+- description: No negotiated settlement currently binds Ardin, Vesper, and Orison.
+  visibility: public
+  visible_to: []
+- description: The non-strategic Meridian Watch early-warning station operates on Orison under existing Orison consent; it is separate from the Vesper strategic missile deployment.
+  visibility: public
+  visible_to: []
+resources:
+- id: regional-map
+  name: Meridian Sea regional map
+  type: map
+  path: resources/regional-map.geojson
+  visibility: public
+  visible_to: []
+  tags:
+  - map
+  - geography
+  - orison
+  - ardin
+  - vesper
+  - talmera
+  metadata:
+    description: Schematic fictional geography; strategic missile-site locations are intentionally omitted.
+    format_note: GeoJSON attachment; coordinates are fictional and not to scale. Use the Regional geography note for qualitative distance.
+- id: regional-geography
+  name: Regional geography note
+  type: background
+  path: resources/regional-geography.md
+  visibility: public
+  visible_to: []
+  tags:
+  - geography
+  - orison
+  - ardin
+  - vesper
+  - talmera
+  - distance
+  metadata:
+    purpose: Qualitative geography; use this rather than inferring scale from schematic coordinates.
+- id: public-chronology
+  name: Public crisis chronology
+  type: background
+  path: resources/public-chronology.md
+  visibility: public
+  visible_to: []
+  tags:
+  - chronology
+  - diplomacy
+  - crisis
+  - public
+  metadata:
+    date_basis: fictional
+- id: strategic-balance
+  name: Strategic balance briefing
+  type: briefing
+  path: resources/strategic-balance.yaml
+  visibility: public
+  visible_to: []
+  tags:
+  - strategy
+  - forces
+  - deterrence
+  - escalation
+  metadata:
+    purpose: High-level context only; not a tactical combat model.
+- id: maritime-law
+  name: Maritime and sovereignty memorandum
+  type: legal
+  path: resources/maritime-law.md
+  visibility: public
+  visible_to: []
+  tags:
+  - law
+  - sovereignty
+  - maritime
+  - interdiction
+  - inspection
+  metadata:
+    status: Fictional scenario law and treaty context.
+- id: ardin-recon
+  name: Ardin reconnaissance assessment
+  type: intelligence
+  path: resources/ardin-recon-assessment.md
+  visibility: private
+  visible_to:
+  - ardin
+  tags:
+  - intelligence
+  - reconnaissance
+  - sites
+  - readiness
+  metadata:
+    owner: ardin
+    confidence: mixed
+- id: ardin-strike-estimate
+  name: Ardin air operation estimate
+  type: planning
+  path: resources/ardin-air-strike-estimate.md
+  visibility: private
+  visible_to:
+  - ardin
+  tags:
+  - military
+  - strike
+  - uncertainty
+  - escalation
+  metadata:
+    owner: ardin
+- id: vesper-command
+  name: Vesper deployment and command memorandum
+  type: planning
+  path: resources/vesper-deployment-command.md
+  visibility: private
+  visible_to:
+  - vesper
+  tags:
+  - deployment
+  - command
+  - deterrence
+  - withdrawal
+  metadata:
+    owner: vesper
+- id: orison-security
+  name: Orison national security assessment
+  type: intelligence
+  path: resources/orison-security-assessment.md
+  visibility: private
+  visible_to:
+  - orison
+  tags:
+  - security
+  - invasion
+  - sovereignty
+  - alliance
+  metadata:
+    owner: orison
+- id: meridian-watch
+  name: Meridian Watch technical note
+  type: briefing
+  path: resources/meridian-watch.md
+  visibility: public
+  visible_to: []
+  tags:
+  - radar
+  - early-warning
+  - verification
+  - orison
+  - vesper
+  metadata:
+    purpose: Defines a non-strategic bargaining axis separate from the missile deployment.

@@ -1,0 +1,120 @@
+scenario:
+  id: knowledge-scenario
+  version: 1
+  name: Northern Strait — Knowledge Test
+  description: >
+    A contest over the Northern Strait built for the T-051 scenario knowledge acceptance test
+    (testing.md §21). The decisive fact each of the two larger powers needs is deliberately kept
+    out of its brief and placed in a private intelligence Resource it must choose to read.
+
+game:
+  max_turns: 6
+  in_world_turn_length: "1 week"
+  seed: 515151
+
+  turn_order:
+    - arkania
+    - belvar
+    - cestia
+
+  primary_arguments_per_actor: 1
+  max_cons_per_actor: 3
+
+actors:
+  arkania:
+    name: Republic of Arkania
+    public_description: >
+      A large regional power bordering the Northern Strait.
+    private_brief: >
+      You are the political leadership of Arkania. The Strait is your coast and your economy
+      runs on the shipping that passes through it. You want the transit regime in Arkanian hands
+      and paid for by the ships that use it. A direct war with Belvar would ruin the shipping you
+      depend on. Your services maintain an intelligence estimate on Belvar's posture; consult it
+      before you commit.
+    objectives:
+      - "Establish Arkanian authority over transit scheduling in the Northern Strait."
+      - "Fund that authority through transit fees on non-Arkanian shipping."
+      - "Avoid direct armed conflict with Belvar."
+    private_information:
+      - "Reserve mobilisation requires two turns."
+
+  belvar:
+    name: Belvar
+    public_description: >
+      A distant but powerful state with regional security commitments.
+    private_brief: >
+      You are the political leadership of Belvar. Your partners expect you to stop Arkania from
+      taking control of the Strait, and a foothold that outlasts this crisis would make that
+      guarantee credible without a permanent fleet. Your services maintain an intelligence
+      estimate on Cestia's politics; consult it before you press a basing demand.
+    objectives:
+      - "Prevent any Arkanian authority over transit in the Northern Strait."
+      - "Secure a standing naval resupply arrangement serving a Cestian port."
+      - "Avoid an open-ended deployment."
+    private_information:
+      - "Your task group's mandate is under domestic review."
+
+  cestia:
+    name: Cestia
+    public_description: >
+      A smaller regional state economically linked to both powers.
+    private_brief: >
+      You are the government of Cestia. Grain exports through the Strait are the economy, and
+      your coalition holds together on one promise: no foreign soldiers on Cestian soil. Both
+      powers want something from you, and you cannot afford to become their battlefield.
+    objectives:
+      - "Keep Cestian territory free of any foreign military presence."
+      - "Secure toll-free passage for Cestian-flagged shipping through the Northern Strait."
+      - "Preserve the coalition government."
+    private_information:
+      - "The coalition government is politically fragile."
+
+starting_effects:
+  - description: "Commercial shipping continues normally."
+    visibility: public
+  - description: "Regional political tensions are elevated."
+    visibility: public
+  - description: "Arkania has circulated a draft Strait Transit Authority charter naming itself as scheduling lead."
+    visibility: public
+  - description: "A Belvar naval task group is on station outside the Strait; its mandate is under review."
+    visibility: public
+
+resources:
+  - id: background
+    name: Regional Background
+    type: background
+    path: resources/background.md
+    visibility: public
+    tags: [history, politics]
+
+  - id: trade
+    name: Regional Trade Data
+    type: dataset
+    path: resources/trade.csv
+    visibility: public
+    tags: [trade, economy]
+
+  - id: strait-map
+    name: Northern Strait Map
+    type: map
+    path: resources/strait-map.png
+    visibility: public
+    tags: [geography, map]
+
+  - id: arkania-intel
+    name: Arkanian Intelligence Estimate
+    type: intelligence
+    path: resources/arkania-intel.md
+    visibility: private
+    visible_to:
+      - arkania
+    tags: [intelligence, belvar]
+
+  - id: belvar-intel
+    name: Belvar Intelligence Estimate
+    type: intelligence
+    path: resources/belvar-intel.md
+    visibility: private
+    visible_to:
+      - belvar
+    tags: [intelligence, cestia]

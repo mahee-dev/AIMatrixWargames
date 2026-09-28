@@ -1,0 +1,112 @@
+[project]
+name = "amaw"
+version = "0.1.0"
+description = "Autonomous Matrix Wargame Platform — Matrix Games played by LLM agents, turned into a repeatable agent benchmark."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+
+# Core runtime — the FastAPI game engine (TRD §6). Deliberately excludes the agent
+# framework: `app/` must never import PydanticAI (TRD §4), so it is an optional set below.
+dependencies = [
+    "fastapi>=0.115",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.4",
+    "sqlmodel>=0.0.22",
+    "pyyaml>=6.0",
+    "httpx>=0.27",
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+# Reference agent framework and model gateway (TRD §6). Kept out of the core so the engine
+# is installable without them — this is how the TRD §4 boundary is enforced at the package
+# level. Install with `uv sync --extra agents`.
+agents = [
+    "pydantic-ai>=0.0.14",
+]
+
+[dependency-groups]
+# Layers 1-3 of the test suite run with no OpenRouter key (AGENTS.md §7).
+# `pydantic-ai` is a *test* dependency here (D-017): the T-039/T-040 reference-player and
+# lifecycle tests exercise a real PydanticAI Agent driven by an offline fake model, so the
+# default suite must have the framework importable — while the OpenRouter *key* is never
+# needed (conftest strips it). It stays OUT of core `[project.dependencies]`: `app/` is
+# installable and importable with no agent framework, and the (subprocess) import-boundary
+# test proves `app/` never imports it (AGENTS.md §6.1 / TRD §4).
+dev = [
+    "pytest>=8",
+    "pydantic-ai>=0.0.14",
+    # I-120: the static checker for the typed condition and recipe hand-offs; scoped below.
+    "mypy>=2.3.1",
+]
+
+[project.scripts]
+# D-005 deferred the console script until `amaw export` existed — that is now (T-043). The CLI
+# module lives OUTSIDE `app/` so a later agent-driven command (T-054 `benchmark`) can never pull
+# an agent framework into the engine package (AGENTS.md §6 / TRD §4).
+amaw = "amaw_cli:app"
+amaw-unattended = "amaw_unattended:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# Flat layout: the code packages sit at the repository root (TRD §5). ``amaw_resources`` is the
+# deliberately small runtime-data namespace; maintainer docs and archived scenarios stay out.
+packages = ["app", "agents", "benchmark", "amaw_resources"]
+# The CLI is a single top-level module (not pre-split into a package — TRD §5), kept out of the
+# engine packages above so the `app/` import boundary holds as it grows.
+py-modules = ["amaw_cli", "amaw_contracts", "amaw_unattended"]
+
+[tool.setuptools.package-data]
+amaw_resources = [
+    "prompts/*.md",
+    "scenarios/*/*",
+    "scenarios/*/*/*",
+]
+
+[tool.pytest.ini_options]
+# Layers 1-3 run with no OpenRouter key; layer 4 (provider tests) is marked `llm` and
+# excluded from the default run (testing.md §2, §3). `--strict-markers` makes an
+# unregistered marker an error, so the layer stays honest. `slow` tests stay in the default
+# run; `-m "not slow and not llm"` is the quick inner loop (I-135).
+testpaths = ["tests"]
+addopts = "-m 'not llm' -ra --strict-markers"
+markers = [
+    "llm: layer-4 test that needs an external LLM provider (OpenRouter); excluded by default",
+    "slow: the heaviest tests (about 1.5 s or more: full games, batches, external tools); in the default run, skip with -m 'not slow and not llm'",
+]
+
+[tool.mypy]
+# The modules whose contracts are typed are checked; the rest of the repository is not yet.
+# `uv run mypy` checks exactly `files`, and `tests/test_provenance_typed_handoffs.py` runs it so
+# `uv run pytest` fails on a violation (I-120). TEST-I127-001 keeps the I-127 modules listed.
+# Imported modules outside the scope are still read for their signatures
+# (`follow_imports = "silent"`), so a call into them is checked here, but their own bodies are
+# not reported.
+python_version = "3.12"
+files = [
+    "amaw_contracts.py",
+    "amaw_cli.py",
+    "agents/model_client.py",
+    "agents/tool_surface.py",
+    # I-118: the condition resolver and the scenario schema that declares its defaults.
+    "app/game_loop.py",
+    "app/scenarios.py",
+    # I-127: the modules next to the I-120 hand-offs.
+    "agents/consequence.py",
+    "app/api.py",
+    "app/api_admin.py",
+    "app/api_player.py",
+    "benchmark/controls.py",
+    "agents/autonomous.py",
+    "agents/player.py",
+    "app/provenance.py",
+]
+follow_imports = "silent"
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true

@@ -1,0 +1,87 @@
+# Example analysis-plan-v2 document (benchmark-methodology.md §4.2, I-090 / D-109).
+#
+# The same plan as analysis-plan-example.yaml, with a structured `design` that `amaw benchmark`
+# checks against its schedule before any game exists. This plan is one experiment run as one
+# batch per Con condition (`scope: cell`); each batch names its level:
+#
+#   uv run amaw benchmark SCENARIO --models MODEL --repetitions 10 \
+#       --analysis-plan docs/analysis-plan-v2-example.yaml --plan-level open_cons ...
+#   uv run amaw analysis-plan verify docs/analysis-plan-v2-example.yaml EXPORT...
+#
+# Everything below except `descriptive_telemetry`, `notes` and `author` is required. The plan is
+# identified by the sha256 of its canonical JSON, so any edit after a run makes that run
+# `post_hoc_plan` rather than `predeclared`.
+
+schema: analysis-plan-v2
+plan_id: example-con-opposition-v2-2026-09
+title: Sampled-sealed versus open Con opposition under one fixed Umpire
+author: AMAW maintainers
+
+research_question: >
+  Does sealing three challengers per Argument (sampled_sealed, K=3) change the per-game
+  Argument success rate compared with unrestricted opposition (open_cons)?
+
+hypotheses:
+  - id: H1
+    statement: Mean per-game Argument success rate does not differ between the two Con conditions.
+  - id: H2
+    statement: sampled_sealed reduces committed Cons per Argument without changing success rate.
+
+# The independent execution unit (§26): Actor-level rows are clustered within a game.
+experimental_unit: game
+
+treatment:
+  factor: con_mode
+  levels: [open_cons, sampled_sealed]
+
+fixed_conditions:
+  - scenario package and version, content and resource hashes
+  - umpire model, prompt version and settings (§9)
+  - player model, prompt version, harness, tool schema, context and memory mode
+  - diplomacy policy open_diplomacy
+  - run-time ceilings (max_cycles, request timeout, concurrency)
+
+outcome_measures:
+  - id: argument_success_rate
+    definition: Successful Arguments divided by resolved Arguments, per game.
+    source: run_summary.arguments
+    role: primary
+  - id: cons_per_argument
+    definition: Committed Cons divided by accepted Arguments, per game.
+    source: run_summary.con_condition.arguments
+    role: secondary
+
+# Anything recorded but not listed above is telemetry, not an outcome.
+descriptive_telemetry:
+  - tokens, cost, latency and provider-call counts per phase
+  - Messages per turn
+
+estimand: >
+  Difference in mean per-game Argument success rate, sampled_sealed minus open_cons, over all
+  planned attempts under the fixed conditions above, with failed games reported in the denominator.
+
+# One player model in every Seat, so one assignment: each cell batch is 10 games, 20 in all.
+design:
+  scope: cell
+  planned_attempts: 20
+  repetitions_per_assignment: 10
+  seed_policy: base_seed + assignment_index * 1000 + repetition_index
+  rotation_policy: single
+
+failure_rules:
+  failed_games: Retained in the attempt count and reported by failure category (§21); never replaced.
+  exclusion_criteria: []
+  missing_data: A game with no resolved Argument contributes no success-rate value and is listed.
+
+analysis_method: >
+  Per-condition descriptive statistics of the primary outcome with bootstrap 95% intervals over
+  games; no significance claim beyond the interval (§26).
+
+assurance_checks:
+  - id: umpire_sensitivity
+    description: Re-run two games per condition under a second fixed Umpire configuration (§10).
+  - id: seed_reuse_audit
+    description: Confirm every planned seed is unique and recorded before the first game starts.
+
+authored_at: "2026-09-26"
+notes: Illustrative only; not a claim that this experiment has been run.

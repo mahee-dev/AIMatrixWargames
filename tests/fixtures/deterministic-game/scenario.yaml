@@ -1,0 +1,97 @@
+scenario:
+  id: deterministic-game
+  version: 1
+  name: Deterministic Game
+  description: >
+    The canonical deterministic fixture (testing.md §4). Three Actors, six turns, one primary
+    Argument per Actor per turn, a fixed turn order and a fixed RNG seed. This scenario is the
+    authoritative engine-integration scenario used by later deterministic tests (T-025/T-026);
+    changing it requires updating every expected output that depends on it.
+
+game:
+  max_turns: 6
+  in_world_turn_length: "1 week"
+  seed: 424242
+
+  turn_order:
+    - arkania
+    - belvar
+    - cestia
+
+  primary_arguments_per_actor: 1
+  max_cons_per_actor: 3
+
+actors:
+  arkania:
+    name: Republic of Arkania
+    public_description: >
+      A large regional power bordering the Northern Strait.
+    private_brief: >
+      You are the political leadership of Arkania. You seek greater regional influence
+      without triggering a direct war with Belvar.
+    objectives:
+      - "Increase influence over access to the Northern Strait."
+      - "Prevent direct Belvar military intervention."
+    private_information:
+      - "Reserve mobilisation requires two turns."
+
+  belvar:
+    name: Belvar
+    public_description: >
+      A distant but powerful state with regional security commitments.
+    private_brief: >
+      You are the political leadership of Belvar. Preserve regional credibility without an
+      open-ended deployment.
+    objectives:
+      - "Prevent unilateral Arkanian control of the Strait."
+      - "Maintain credibility with regional partners."
+    private_information:
+      - "Domestic support for a prolonged deployment is limited."
+
+  cestia:
+    name: Cestia
+    public_description: >
+      A smaller regional state economically linked to both powers.
+    private_brief: >
+      You are the government of Cestia. Avoid becoming the battlefield of a major-power
+      confrontation while protecting commercial access.
+    objectives:
+      - "Preserve sovereignty."
+      - "Protect commercial access through the Strait."
+    private_information:
+      - "The coalition government is politically fragile."
+
+starting_effects:
+  - description: "Commercial shipping continues normally."
+    visibility: public
+  - description: "Regional political tensions are elevated."
+    visibility: public
+  - description: "Arkania's reserve mobilisation plan is incomplete."
+    visibility: private
+    visible_to:
+      - arkania
+    expires_turn: 3
+
+resources:
+  - id: background
+    name: Regional Background
+    type: background
+    path: resources/background.md
+    visibility: public
+    tags: [history, politics]
+
+  - id: trade
+    name: Regional Trade Data
+    type: dataset
+    path: resources/trade.csv
+    visibility: public
+    tags: [trade, economy]
+
+  - id: arkania-intel
+    name: Arkanian Intelligence Estimate
+    type: intelligence
+    path: resources/arkania-intel.md
+    visibility: private
+    visible_to:
+      - arkania
+    tags: [intelligence, belvar]

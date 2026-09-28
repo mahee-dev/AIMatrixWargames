@@ -1,0 +1,9 @@
+include .env.example
+include amaw_unattended.py
+include uv.lock
+recursive-include .github *.yml
+recursive-include guide *.md *.yaml
+recursive-include docs *.md *.yaml
+recursive-include scenarios *
+recursive-include tests *
+global-exclude __pycache__ *.py[cod] .DS_Store

@@ -1,0 +1,120 @@
+schema: analysis-plan-v1
+plan_id: i100-search-contract-comparison-2026-09
+title: Released search-v1 versus candidate search-v2 on Northern Strait
+author: AMAW maintainers
+
+research_question: >
+  Does the frozen search-v2 Resource ranking reduce retrieval failure and unproductive
+  reformulation while preserving sufficiently relevant gameplay behaviour, compared with the
+  released search-v1 contract under the current Northern Strait provider condition?
+
+hypotheses:
+  - id: H1
+    statement: >
+      search-v2 has a lower per-game zero-result search rate than search-v1.
+  - id: H2
+    statement: >
+      search-v2 has fewer unproductive reformulations after an identical ordered result set and
+      a higher search-returned-to-read conversion than search-v1.
+  - id: H3
+    statement: >
+      Any gameplay drift under search-v2 is descriptively attributable to access to relevant
+      Resources rather than unacceptable low-precision retrieval, instability, cost, or latency.
+
+experimental_unit: game
+
+treatment:
+  factor: search_contract
+  levels: [search-v1, search-v2]
+
+fixed_conditions:
+  - Northern Strait scenario package version 1 and its exact scenario/resource hashes
+  - one reference player model deepseek/deepseek-v4-flash-0731 in every Seat
+  - fixed Umpire model deepseek/deepseek-v4-flash-0731, umpire-v1.3, temperature 0, low reasoning, 16000 max tokens, 600 second timeout
+  - player-v1.10, pydantic-ai 2.42.0, tool_loop activation, broad tool surface, sequential-v1 research, full-v1 research history
+  - uniform inference profile; player temperature 0, low reasoning, 4000 max tokens, 600 second timeout
+  - max cycles 1000; max messages per activation 3; max LLM iterations 8; max tool calls 12; max research tool calls 4; max research operations 4; max messages per phase 2; max activations per opportunity 3; existing guardrails otherwise unchanged
+  - open_diplomacy with the current coordinator concurrency 4 for Diplomacy and 4 for Cons
+  - open_cons; sealed_cons reply mode; unchanged Con and reply budgets
+  - same repository/code version, environment, prompt/tool/schema/resource hashes, run class, analysis plan, provider timeout/retry configuration, and scheduling seed
+  - paired game seeds 60000 and 60001; no seed substitution or post-hoc sample extension
+
+outcome_measures:
+  - id: zero_result_rate
+    definition: Metadata-bearing zero-result Resource searches divided by metadata-bearing Resource searches, per game.
+    source: app.summary.build_resource_research_report totals zero_result_searches and searches
+    role: primary
+  - id: reformulation_rate
+    definition: Reformulations after an identical ordered result set divided by Resource searches, per game.
+    source: app.summary.build_resource_research_report totals reformulations_after_identical_set and searches
+    role: primary
+  - id: search_returned_read_conversion
+    definition: Reads of a Resource returned by a preceding search divided by Resource searches, per game.
+    source: app.summary.build_resource_research_report totals search_returned_read_conversions and searches
+    role: primary
+  - id: zero_result_searches
+    definition: Count of metadata-bearing Resource searches with zero results.
+    source: app.summary.build_resource_research_report totals zero_result_searches
+    role: secondary
+  - id: reformulations_after_identical_set
+    definition: Count of new non-repeated queries whose ordered result set equals the immediately preceding search.
+    source: app.summary.build_resource_research_report totals reformulations_after_identical_set
+    role: secondary
+  - id: search_returned_read_conversions
+    definition: Count of reads of Resources returned by a preceding search in the same activation.
+    source: app.summary.build_resource_research_report totals search_returned_read_conversions
+    role: secondary
+
+estimand: >
+  Paired descriptive difference in each declared retrieval measure, search-v2 minus search-v1,
+  over the two planned seeds under the fixed condition; failed or paused games remain in the
+  planned denominator and are reported by failure category. No significance claim is planned.
+
+design:
+  planned_attempts: 4
+  repetitions_per_assignment: 2
+  seed_policy: exact paired seeds [60000, 60001], each run once under each search_contract
+  rotation_policy: one reference player model in every Seat; no role rotation
+
+failure_rules:
+  failed_games: Retain every failed or paused game in the denominator and report provider, Umpire, activation, and retrieval outcomes separately; never replace a failed pair member.
+  exclusion_criteria: []
+  missing_data: A game lacking a usable I-099 result-identity report is retained and marked missing for the affected retrieval measures; it cannot be silently treated as zero.
+
+analysis_method: >
+  Report each paired seed directly, then aggregate by contract with counts and rates. Inspect the
+  existing I-099 activation-level report, Resource ids/ranks and access metadata, raw provider
+  usage/cost/latency, game outcomes and authoritative Effects. Treat all non-declared measures as
+  descriptive telemetry; do not infer causality or statistical significance from N=2 pairs.
+
+assurance_checks:
+  - id: readiness_contract
+    description: Confirm I-108 regression coverage, v1 default, frozen D-084 v2 semantics, and sealed search_contract propagation before provider calls.
+  - id: paired_seed_reuse
+    description: Confirm seeds 60000 and 60001 occur exactly once under each contract and the predeclared A/B order is followed.
+  - id: held_constants
+    description: Compare manifests, condition hashes, prompt/tool/resource hashes, models, budgets, concurrency, and Umpire provenance across arms; search_contract is the only intended difference.
+  - id: retrieval_integrity
+    description: Confirm result metadata is populated, visibility is enforced, no search silently uses the other contract, and no replay-cache identity crosses contracts.
+  - id: run_integrity
+    description: Confirm every batch has integrity ok and every attempt is retained, including failed or paused attempts.
+
+authored_at: "2026-09-22"
+
+descriptive_telemetry:
+  - total searches, repeated queries, distinct result sets, reads, read ranks, searches followed by no read, research operations, and research tool calls at total and activation level
+  - surfaced/read Resource ids and ordered result metadata
+  - player provider calls, input/output/reasoning tokens, cost, activation wall time, provider wait, failures/recoveries, invalid tool calls, game duration, and cycles
+  - Arguments, Messages, Cons, adjudications, settlements/state changes, final Effects, completion/pause outcome, and qualitative retrieval-linked drift
+  - provider and Umpire faults, replay/cache identity, and all manifest/integrity checks
+
+notes: >
+  The treatment-block order is predeclared and deterministically randomized: B(seed 60000,
+  search-v2), B(seed 60001, search-v2), A(seed 60000, search-v1), A(seed 60001, search-v1).
+  Within each block the runner's fixed seed policy is used. The same two seeds therefore form
+  exact pairs across the two blocks. Maximum execution is four provider-backed games. The stopping
+  rule is completion of these four scheduled games or preservation of all attempted games after
+  an unrecoverable provider failure; do not add games after inspecting an early result. Expected
+  cost is capped operationally at four games using the current T-060 smoke condition and is
+  estimated from the recent two-game smoke at approximately USD 0.20, subject to provider billing
+  and recovery retries.

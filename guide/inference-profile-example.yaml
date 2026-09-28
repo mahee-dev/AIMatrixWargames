@@ -1,0 +1,14 @@
+# I-032 inference-profile-v1 example. Pass with `amaw run SCENARIO --inference-profile PATH`.
+# Every value is optional; an unset value inherits the flat --player-*/--umpire-* setting.
+# The resolved per-phase table is sealed into the run manifest; nothing here is a default.
+schema: inference-profile-v1
+name: cheap-diplomacy-and-cons
+phases:
+  diplomacy:
+    reasoning_effort: low
+    max_tokens: 2000
+  cons:
+    reasoning_effort: low
+  # argument: inherits the flat player settings
+umpire:
+  reasoning_effort: medium

@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important}img{max-width:100%}</style>
+<title>AMAW Field Manual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F4F5F1; --surface:#FFFFFF; --sunk:#EAECE6; --ink:#17212B; --muted:#5A6570; --rule:#D5D9D1;
+  --actor:#2D5DA3; --actor-soft:#E3EAF6;
+  --umpire:#A86A12; --umpire-soft:#F6EBD9;
+  --server:#2B7556; --server-soft:#DDEFE6;
+  --warn:#A8402E; --warn-soft:#F6E1DC;
+  --code-bg:#1B242D; --code-ink:#E4E8E1; --code-dim:#8C99A5; --code-key:#9CC3F0; --code-str:#E8C07A;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11161B; --surface:#182028; --sunk:#1E2730; --ink:#E5E9E3; --muted:#9BA5AE; --rule:#2C3640;
+    --actor:#86ABEA; --actor-soft:#1C2A40;
+    --umpire:#E3AC52; --umpire-soft:#352912;
+    --server:#63C197; --server-soft:#15302A;
+    --warn:#EE8A76; --warn-soft:#3A1F1A;
+    --code-bg:#0B0F13; --code-ink:#E4E8E1;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11161B; --surface:#182028; --sunk:#1E2730; --ink:#E5E9E3; --muted:#9BA5AE; --rule:#2C3640;
+  --actor:#86ABEA; --actor-soft:#1C2A40;
+  --umpire:#E3AC52; --umpire-soft:#352912;
+  --server:#63C197; --server-soft:#15302A;
+  --warn:#EE8A76; --warn-soft:#3A1F1A;
+  --code-bg:#0B0F13; --code-ink:#E4E8E1;
+}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6;margin:0}
+a{color:var(--actor)}
+code,kbd{font-family:var(--mono);font-size:.86em;background:var(--sunk);padding:.08em .35em;border-radius:3px}
+:focus-visible{outline:2px solid var(--actor);outline-offset:2px}
+
+.shell{display:grid;grid-template-columns:230px minmax(0,1fr);gap:48px;max-width:1240px;margin:0 auto;padding-inline:24px}
+nav.toc{position:sticky;top:env(safe-area-inset-top,0px);align-self:start;padding-block:40px;max-height:100vh;overflow:auto}
+.toc .brand{font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:.02em;line-height:1}
+.toc .brand small{display:block;font-size:13px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.toc ol{list-style:none;margin:28px 0 0;padding:0;counter-reset:s;display:grid;gap:2px}
+.toc li{counter-increment:s}
+.toc a{display:flex;gap:10px;text-decoration:none;color:var(--muted);font-family:var(--display);font-size:17px;font-weight:500;padding:4px 8px;border-radius:4px;letter-spacing:.01em}
+.toc a::before{content:counter(s,decimal-leading-zero);font-family:var(--mono);font-size:11px;padding-top:4px;opacity:.7}
+.toc a:hover,.toc a.on{color:var(--ink);background:var(--sunk)}
+
+main{padding-block:40px 96px;min-width:0}
+.col{max-width:760px}
+header.hero{padding-bottom:36px;border-bottom:2px solid var(--ink);margin-bottom:12px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(42px,6vw,68px);line-height:.95;letter-spacing:-.005em;margin:.2em 0 .25em;text-wrap:balance}
+.lede{font-size:20px;line-height:1.55;max-width:680px;margin:0}
+section{padding-top:56px;scroll-margin-top:16px}
+h2{font-family:var(--display);font-weight:700;font-size:38px;line-height:1.05;margin:0 0 .35em;text-wrap:balance;display:flex;gap:14px;align-items:baseline}
+h2 .n{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--muted);letter-spacing:.06em}
+h3{font-family:var(--display);font-weight:600;font-size:24px;margin:1.6em 0 .3em;letter-spacing:.01em}
+p{margin:.6em 0}
+.small{font-size:15px;color:var(--muted)}
+.cite{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.02em}
+
+/* role chips */
+.chip{display:inline-block;font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.06em;text-transform:uppercase;padding:1px 8px;border-radius:3px;vertical-align:1px}
+.chip.a{background:var(--actor-soft);color:var(--actor)}
+.chip.u{background:var(--umpire-soft);color:var(--umpire)}
+.chip.s{background:var(--server-soft);color:var(--server)}
+
+/* figures */
+figure{margin:28px 0;padding:0}
+.fig{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px;overflow-x:auto}
+figcaption{font-size:14.5px;color:var(--muted);margin-top:10px;max-width:700px}
+svg text{font-family:var(--display)}
+svg .t-mono{font-family:var(--mono)}
+
+/* callouts */
+.rule-box{border-left:4px solid var(--server);background:var(--server-soft);padding:14px 18px;border-radius:0 6px 6px 0;margin:22px 0}
+.rule-box strong{font-family:var(--display);font-size:18px;letter-spacing:.02em}
+.caution{border-left-color:var(--warn);background:var(--warn-soft)}
+
+/* three parties */
+.parties{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:24px 0}
+.party{background:var(--surface);border:1px solid var(--rule);border-top:4px solid var(--c);border-radius:6px;padding:16px 16px 12px}
+.party h4{font-family:var(--display);font-size:22px;margin:0 0 2px;color:var(--c)}
+.party .kind{font-family:var(--mono);font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.party ul{margin:10px 0 0;padding-left:18px;font-size:15.5px}
+.party li{margin:.25em 0}
+
+/* argument card */
+.argcard{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--rule);border-radius:6px;overflow:hidden;background:var(--surface);margin:20px 0}
+.argcard > div{padding:14px 16px;border-right:1px solid var(--rule)}
+.argcard > div:last-child{border-right:0}
+.argcard .lbl{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);display:block;margin-bottom:4px}
+.argcard p{margin:0;font-size:15.5px}
+.argcard ul{margin:0;padding-left:18px;font-size:15.5px}
+
+/* gates */
+.gates{list-style:none;padding:0;margin:18px 0;display:grid;gap:8px;counter-reset:g}
+.gates li{counter-increment:g;display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:12px 14px}
+.gates li::before{content:counter(g);font-family:var(--display);font-weight:700;font-size:26px;line-height:1;color:var(--umpire);text-align:center;padding-top:2px}
+.gates b{font-family:var(--display);font-size:19px;font-weight:600;letter-spacing:.01em}
+.gates span{display:block;font-size:15.5px;color:var(--muted)}
+
+/* simulator */
+.sim{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px;margin:24px 0}
+.sim-head{display:flex;flex-wrap:wrap;gap:16px;align-items:end;justify-content:space-between}
+.sim label{font-family:var(--mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:block;margin-bottom:4px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:5px;overflow:hidden}
+.seg button{font:500 15px var(--display);letter-spacing:.03em;background:transparent;color:var(--muted);border:0;padding:7px 12px;cursor:pointer;border-right:1px solid var(--rule)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--umpire);color:var(--surface)}
+.btn{font:600 16px var(--display);letter-spacing:.05em;text-transform:uppercase;background:var(--server);color:var(--surface);border:0;border-radius:5px;padding:9px 18px;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--rule)}
+input[type=range]{width:100%;accent-color:var(--umpire)}
+.track{position:relative;height:46px;margin:22px 0 6px}
+.track .bar{position:absolute;inset:14px 0 14px 0;border-radius:3px;background:var(--warn-soft);overflow:hidden}
+.track .ok{position:absolute;left:0;top:0;bottom:0;background:var(--server-soft);border-right:2px solid var(--umpire)}
+.track .roll{position:absolute;top:2px;width:2px;height:42px;background:var(--ink);transform:translateX(-1px);transition:left .5s cubic-bezier(.2,.8,.2,1)}
+.track .roll::after{content:attr(data-v);position:absolute;top:-2px;left:6px;font:500 12px var(--mono);white-space:nowrap}
+.ticks{display:flex;justify-content:space-between;font:12px var(--mono);color:var(--muted)}
+.anchors{display:grid;grid-template-columns:repeat(5,1fr);font:13.5px var(--display);color:var(--muted);text-align:center;margin-top:4px;letter-spacing:.02em}
+.outcome{margin-top:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.branch{border:1px solid var(--rule);border-radius:6px;padding:12px 14px;font-size:15px;opacity:.55;transition:opacity .3s,border-color .3s}
+.branch .lbl{font:600 15px var(--display);letter-spacing:.05em;text-transform:uppercase}
+.branch.win{opacity:1;border-color:var(--server);box-shadow:inset 0 0 0 1px var(--server)}
+.branch.win.fail{border-color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn)}
+.readout{font:14px var(--mono);margin-top:12px;color:var(--muted);min-height:1.4em}
+.readout b{color:var(--ink);font-weight:500}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;margin:18px 0;border:1px solid var(--rule);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:var(--sunk);white-space:nowrap}
+td code{white-space:nowrap}
+td.c{text-align:center}
+.yes{color:var(--server);font-weight:600}
+.no{color:var(--muted)}
+.some{color:var(--umpire);font-weight:600}
+
+/* code */
+pre{background:var(--code-bg);color:var(--code-ink);font:13.5px/1.6 var(--mono);padding:16px 18px;border-radius:6px;overflow-x:auto;margin:16px 0}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre .k{color:var(--code-key)} pre .s{color:var(--code-str)} pre .c{color:var(--code-dim)}
+
+/* scenarios */
+.scen{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0}
+.scen div{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:14px 16px}
+.scen h4{margin:0;font-family:var(--display);font-size:20px}
+.scen code{font-size:12px}
+.scen .facts{font:13px var(--mono);color:var(--muted);margin-top:6px}
+.scen p{font-size:15px;margin:.4em 0 0}
+
+/* dials */
+.dials{display:grid;gap:14px;margin:20px 0}
+.dial{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:16px 18px}
+.dial-top{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;justify-content:space-between}
+.dial h4{margin:0;font-family:var(--display);font-size:21px}
+.dial .flag{font:13px var(--mono);color:var(--muted)}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.opt{border:1px solid var(--rule);border-radius:5px;padding:10px 12px;font-size:15px}
+.opt .name{font:500 13.5px var(--mono);display:block;margin-bottom:2px}
+.opt.def{background:var(--sunk)}
+.opt.def .name::after{content:"released default";font:600 11px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--server);margin-left:8px}
+
+/* builder */
+.builder{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px;margin:24px 0}
+.bgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 16px}
+.field label{display:block;font-family:var(--mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px}
+.field select,.field input{width:100%;font:15px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--rule);border-radius:4px;padding:7px 9px}
+.field input[type=checkbox]{width:auto}
+.field.dim{opacity:.4}
+.bout{position:relative}
+.bout pre{margin-bottom:6px;min-height:80px;white-space:pre}
+.bout .copy{position:absolute;top:8px;right:8px;font:600 13px var(--display);letter-spacing:.06em;text-transform:uppercase;background:var(--surface);color:var(--ink);border:1px solid var(--rule);border-radius:4px;padding:4px 10px;cursor:pointer}
+.notes{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:6px;font-size:14.5px}
+.notes li{padding-left:22px;position:relative}
+.notes li::before{content:"";position:absolute;left:4px;top:.55em;width:8px;height:8px;border-radius:50%;background:var(--umpire)}
+.notes li.cond::before{background:var(--actor)}
+
+/* rotation */
+.rot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0}
+.perm{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:10px 12px}
+.perm .pid{font:12px var(--mono);color:var(--muted)}
+.perm .row{display:flex;gap:6px;margin-top:6px}
+.perm .cell{flex:1;text-align:center;border-radius:4px;padding:4px 0;font:600 15px var(--display)}
+.perm .cell small{display:block;font:11px var(--mono);font-weight:400;opacity:.8}
+.m-X{background:var(--actor-soft);color:var(--actor)}
+.m-Y{background:var(--umpire-soft);color:var(--umpire)}
+.m-Z{background:var(--server-soft);color:var(--server)}
+.perm .reps{display:flex;gap:3px;margin-top:8px}
+.perm .reps i{flex:1;height:6px;border-radius:2px;background:var(--rule)}
+
+.hold{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:14px;margin:18px 0}
+.hold > div{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:14px 16px}
+.hold h4{margin:0 0 6px;font-family:var(--display);font-size:19px;letter-spacing:.02em}
+.hold ul{margin:0;padding-left:18px;font-size:15px;columns:2;column-gap:28px}
+.hold .vary ul{columns:1}
+.hold .vary{border-color:var(--actor);box-shadow:inset 0 0 0 1px var(--actor)}
+
+.claims{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0}
+.claims > div{border-radius:6px;padding:14px 16px}
+.claims .ok{background:var(--server-soft)}
+.claims .bad{background:var(--warn-soft)}
+.claims h4{margin:0 0 6px;font-family:var(--display);font-size:19px}
+.claims ul{margin:0;padding-left:18px;font-size:15px}
+
+dl.gloss{display:grid;grid-template-columns:170px 1fr;gap:10px 20px;margin:18px 0}
+dl.gloss dt{font-family:var(--display);font-weight:600;font-size:18px}
+dl.gloss dd{margin:0;font-size:15.5px}
+
+footer{margin-top:64px;padding-top:18px;border-top:1px solid var(--rule);font-size:14px;color:var(--muted)}
+
+@media (max-width:980px){
+  .shell{grid-template-columns:1fr;gap:0;padding-inline:16px}
+  nav.toc{position:static;max-height:none;padding-block:24px 0}
+  .toc ol{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:640px){
+  .parties,.argcard,.scen,.opts,.outcome,.hold,.claims{grid-template-columns:1fr}
+  .argcard > div{border-right:0;border-bottom:1px solid var(--rule)}
+  .bgrid{grid-template-columns:1fr 1fr}
+  .rot{grid-template-columns:1fr 1fr}
+  .hold ul{columns:1}
+  dl.gloss{grid-template-columns:1fr;gap:2px}
+  dl.gloss dd{margin-bottom:10px}
+  h2{font-size:32px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="shell">
+<nav class="toc" aria-label="Contents">
+  <div class="brand">AMAW<small>Field Manual</small></div>
+  <ol>
+    <li><a href="#what">What AMAW is</a></li>
+    <li><a href="#turn">Anatomy of a turn</a></li>
+    <li><a href="#argue">Arguments &amp; Cons</a></li>
+    <li><a href="#umpire">Adjudication</a></li>
+    <li><a href="#see">Who sees what</a></li>
+    <li><a href="#scenario">Scenarios</a></li>
+    <li><a href="#run">Running a game</a></li>
+    <li><a href="#dials">Changing parameters</a></li>
+    <li><a href="#builder">Command builder</a></li>
+    <li><a href="#method">Benchmark method</a></li>
+    <li><a href="#output">Reading results</a></li>
+    <li><a href="#gloss">Glossary</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="hero col">
+  <div class="eyebrow">Autonomous Matrix Agent Wargame · operator's guide</div>
+  <h1>How AMAW plays a Matrix Game, and how to measure the players</h1>
+  <p class="lede">LLM agents play the Actors. An LLM Umpire judges their Arguments. The server keeps the state and rolls every die. This manual covers the rules of play, the adjudication method, the settings you can change, and how repeated runs become a benchmark.</p>
+</header>
+
+<!-- 1 -->
+<section id="what" class="col">
+  <h2><span class="n">01</span>What AMAW is</h2>
+  <p>A <strong>Matrix Game</strong> is a wargame without combat tables. Each player states what their Actor does, what they want it to achieve and why it should work. Other players argue against it, and an umpire weighs the case and gives it a probability of success. AMAW runs this format with two or more LLM agents (three or more recommended) and records everything as data. Many runs of the same scenario can then be compared.</p>
+  <p>Three parties take part, and each has a fixed job.</p>
+
+  <div class="parties">
+    <div class="party" style="--c:var(--actor)">
+      <div class="kind">LLM · one per Seat</div>
+      <h4>Actors</h4>
+      <ul>
+        <li>Read their private brief, objectives and secrets</li>
+        <li>Negotiate in public and private Messages</li>
+        <li>Make 1–3 Arguments per turn, as the scenario sets, and Con others'</li>
+        <li>Search and read scenario Resources</li>
+      </ul>
+    </div>
+    <div class="party" style="--c:var(--umpire)">
+      <div class="kind">LLM · fixed per experiment</div>
+      <h4>Umpire</h4>
+      <ul>
+        <li>Reads the Argument, its Cons and the established facts</li>
+        <li>Proposes a <em>mode</em> and a <em>probability</em></li>
+        <li>Writes a success branch and a failure branch</li>
+        <li>Never rolls and never decides</li>
+      </ul>
+    </div>
+    <div class="party" style="--c:var(--server)">
+      <div class="kind">Python · FastAPI + SQLite</div>
+      <h4>Server</h4>
+      <ul>
+        <li>Owns every phase transition and all state</li>
+        <li>Rolls the seeded RNG and picks the branch</li>
+        <li>Filters what each Actor may see</li>
+        <li>Seals the run manifest and exports the game</li>
+      </ul>
+    </div>
+  </div>
+
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 900 250" width="100%" style="min-width:640px" role="img" aria-label="Actors send actions to the server through the API; the server sends filtered context back. The server sends the Umpire the Argument and Cons; the Umpire returns a mode and probability. The server then rolls and applies Effects.">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+        </defs>
+        <rect x="20" y="70" width="190" height="110" rx="6" fill="var(--actor-soft)" stroke="var(--actor)" stroke-width="1.5"/>
+        <text x="115" y="112" text-anchor="middle" font-size="24" font-weight="700" fill="var(--actor)">ACTORS</text>
+        <text x="115" y="138" text-anchor="middle" font-size="15" fill="var(--ink)">LLM players, 2+ (3+ recommended)</text>
+        <text x="115" y="158" text-anchor="middle" font-size="13" fill="var(--muted)" class="t-mono">Seat bearer token</text>
+
+        <rect x="355" y="50" width="190" height="150" rx="6" fill="var(--server-soft)" stroke="var(--server)" stroke-width="1.5"/>
+        <text x="450" y="92" text-anchor="middle" font-size="24" font-weight="700" fill="var(--server)">SERVER</text>
+        <text x="450" y="120" text-anchor="middle" font-size="15" fill="var(--ink)">state machine</text>
+        <text x="450" y="140" text-anchor="middle" font-size="15" fill="var(--ink)">visibility service</text>
+        <text x="450" y="160" text-anchor="middle" font-size="15" fill="var(--ink)">seeded RNG</text>
+        <text x="450" y="180" text-anchor="middle" font-size="15" fill="var(--ink)">SQLite + export</text>
+
+        <rect x="690" y="70" width="190" height="110" rx="6" fill="var(--umpire-soft)" stroke="var(--umpire)" stroke-width="1.5"/>
+        <text x="785" y="112" text-anchor="middle" font-size="24" font-weight="700" fill="var(--umpire)">UMPIRE</text>
+        <text x="785" y="138" text-anchor="middle" font-size="15" fill="var(--ink)">LLM adjudicator</text>
+        <text x="785" y="158" text-anchor="middle" font-size="13" fill="var(--muted)" class="t-mono">blind to player models</text>
+
+        <path d="M212 100 H350" stroke="var(--muted)" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+        <text x="281" y="92" text-anchor="middle" font-size="14" fill="var(--ink)">Messages · Arguments · Cons</text>
+        <path d="M353 150 H215" stroke="var(--muted)" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+        <text x="281" y="170" text-anchor="middle" font-size="14" fill="var(--ink)">filtered context</text>
+
+        <path d="M547 100 H685" stroke="var(--muted)" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+        <text x="616" y="92" text-anchor="middle" font-size="14" fill="var(--ink)">Argument + Cons + facts</text>
+        <path d="M688 150 H550" stroke="var(--muted)" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+        <text x="616" y="170" text-anchor="middle" font-size="14" fill="var(--ink)">mode · probability · branches</text>
+
+        <path d="M420 202 C420 238 480 238 480 202" stroke="var(--server)" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+        <text x="450" y="245" text-anchor="middle" font-size="14" fill="var(--server)">roll ≤ p ? success : failure → Effects</text>
+      </svg>
+    </div>
+    <figcaption>Everything goes through the server. Actors never talk to the Umpire, and the Umpire never touches state.</figcaption>
+  </figure>
+
+  <div class="rule-box"><strong>The one rule to remember.</strong> The Umpire <em>proposes</em>, the server <em>disposes</em>. A model never decides an outcome, and all randomness belongs to the server. <span class="cite">INV-RNG-001 · INV-EFFECT-002 · INV-ADJ-003</span></div>
+</section>
+
+<!-- 2 -->
+<section id="turn">
+  <div class="col">
+  <h2><span class="n">02</span>Anatomy of a turn</h2>
+  <p>A game runs for <code>max_turns</code> turns, and each turn stands for an in-world time span such as "1 week" or "about three days". Every turn follows the same order: one shared Diplomacy phase, then one to three Argument rounds. Each round gives every Actor in <code>turn_order</code> a full Argument cycle. Scheduled <em>injects</em> from the scenario enter as new Effects at the start of their turn, before Diplomacy opens.</p>
+  </div>
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 1000 340" width="100%" style="min-width:860px" role="img" aria-label="Turn flow: Diplomacy, then one to three Argument rounds, each walking turn_order with Argument, Cons, optional Reply, Adjudication per Actor; then optional Consequences, then turn complete, looping back to Diplomacy or ending the game.">
+        <defs>
+          <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker>
+        </defs>
+        <!-- game complete -->
+        <rect x="860" y="14" width="120" height="36" rx="18" fill="var(--ink)"/>
+        <text x="920" y="38" text-anchor="middle" font-size="16" font-weight="600" fill="var(--bg)">GAME COMPLETE</text>
+        <path d="M920 108 V54" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#ah2)"/>
+        <text x="928" y="84" font-size="13" fill="var(--muted)" class="t-mono">turn = max</text>
+
+        <!-- diplomacy -->
+        <rect x="20" y="110" width="140" height="64" rx="5" fill="var(--actor-soft)" stroke="var(--actor)" stroke-width="1.5"/>
+        <text x="90" y="138" text-anchor="middle" font-size="20" font-weight="700" fill="var(--actor)">DIPLOMACY</text>
+        <text x="90" y="160" text-anchor="middle" font-size="13" fill="var(--ink)">all Actors · until ready</text>
+
+        <!-- loop frame -->
+        <rect x="186" y="78" width="522" height="170" rx="8" fill="none" stroke="var(--muted)" stroke-dasharray="5 4"/>
+        <text x="200" y="98" font-size="14" fill="var(--muted)" class="t-mono">Argument round(s): repeat turn_order, 1–3 rounds</text>
+
+        <rect x="204" y="110" width="112" height="64" rx="5" fill="var(--actor-soft)" stroke="var(--actor)" stroke-width="1.5"/>
+        <text x="260" y="138" text-anchor="middle" font-size="20" font-weight="700" fill="var(--actor)">ARGUMENT</text>
+        <text x="260" y="160" text-anchor="middle" font-size="13" fill="var(--ink)">active Actor</text>
+
+        <rect x="336" y="110" width="104" height="64" rx="5" fill="var(--actor-soft)" stroke="var(--actor)" stroke-width="1.5"/>
+        <text x="388" y="138" text-anchor="middle" font-size="20" font-weight="700" fill="var(--actor)">CONS</text>
+        <text x="388" y="160" text-anchor="middle" font-size="13" fill="var(--ink)">opponents</text>
+
+        <rect x="460" y="110" width="100" height="64" rx="5" fill="var(--surface)" stroke="var(--actor)" stroke-width="1.5" stroke-dasharray="5 3"/>
+        <text x="510" y="138" text-anchor="middle" font-size="20" font-weight="700" fill="var(--actor)">REPLY</text>
+        <text x="510" y="160" text-anchor="middle" font-size="13" fill="var(--ink)">owner, once</text>
+
+        <rect x="580" y="110" width="116" height="64" rx="5" fill="var(--umpire-soft)" stroke="var(--umpire)" stroke-width="1.5"/>
+        <text x="638" y="138" text-anchor="middle" font-size="18" font-weight="700" fill="var(--umpire)">ADJUDICATION</text>
+        <text x="638" y="160" text-anchor="middle" font-size="13" fill="var(--ink)">Umpire + server roll</text>
+
+        <!-- consequences / turn end -->
+        <rect x="730" y="110" width="116" height="64" rx="5" fill="var(--surface)" stroke="var(--umpire)" stroke-width="1.5" stroke-dasharray="5 3"/>
+        <text x="788" y="138" text-anchor="middle" font-size="17" font-weight="700" fill="var(--umpire)">CONSEQUENCES</text>
+        <text x="788" y="160" text-anchor="middle" font-size="13" fill="var(--ink)">resolver, 0–3 Effects</text>
+
+        <rect x="866" y="110" width="110" height="64" rx="5" fill="var(--server-soft)" stroke="var(--server)" stroke-width="1.5"/>
+        <text x="921" y="138" text-anchor="middle" font-size="18" font-weight="700" fill="var(--server)">TURN END</text>
+        <text x="921" y="160" text-anchor="middle" font-size="13" fill="var(--ink)">expire Effects</text>
+
+        <!-- forward arrows -->
+        <path d="M160 142 H200" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#ah2)"/>
+        <path d="M316 142 H332" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#ah2)"/>
+        <path d="M440 142 H456" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#ah2)"/>
+        <path d="M560 142 H576" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#ah2)"/>
+        <path d="M696 142 H726" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#ah2)"/>
+        <path d="M846 142 H862" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#ah2)"/>
+        <!-- cons skip reply -->
+        <path d="M400 110 C420 70 560 70 590 106" stroke="var(--muted)" stroke-width="1.2" fill="none" stroke-dasharray="3 3" marker-end="url(#ah2)"/>
+        <text x="495" y="72" text-anchor="middle" font-size="12.5" fill="var(--muted)" class="t-mono">sealed_cons / no Con</text>
+        <!-- next actor loop -->
+        <path d="M638 174 V220 H260 V178" stroke="var(--ink)" stroke-width="1.5" fill="none" marker-end="url(#ah2)"/>
+        <text x="449" y="238" text-anchor="middle" font-size="14" fill="var(--ink)">next Actor · next round</text>
+        <!-- next turn -->
+        <path d="M921 174 V296 H90 V178" stroke="var(--ink)" stroke-width="1.5" fill="none" marker-end="url(#ah2)"/>
+        <text x="505" y="316" text-anchor="middle" font-size="14" fill="var(--ink)">turn &lt; max_turns → next turn: release injects, then Diplomacy</text>
+      </svg>
+    </div>
+    <figcaption>Dashed boxes appear only under a condition. <b>Reply</b> runs only under <code>visible_reply</code> when at least one Con was made. <b>Consequences</b> runs only under <code>bounded_effects_v1</code>. The dotted arc is the default path: Cons go straight to adjudication.</figcaption>
+  </figure>
+
+  <div class="col">
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Phase</th><th>Who acts</th><th>What can happen</th><th>Closes when</th></tr></thead>
+      <tbody>
+        <tr><td><b>Diplomacy</b></td><td>every Actor</td><td>Send Messages, search and read Resources, update strategic memory, mark <code>ready</code></td><td>all ready, or timeout, or the round limit under <code>bounded_rounds</code></td></tr>
+        <tr><td><b>Argument</b></td><td>the active Actor</td><td>Submit one Argument. With a budget of 2 or 3, each Actor argues once per round, in <code>turn_order</code></td><td>the Argument is accepted</td></tr>
+        <tr><td><b>Cons</b></td><td>opponents (or the sealed K)</td><td>Up to <code>max_cons_per_actor</code> Cons each, then <code>pass_con</code></td><td>every eligible opponent has passed</td></tr>
+        <tr><td><b>Reply</b></td><td>the Argument's owner</td><td>One reply of up to <code>reply_max_points</code> points, answering revealed Cons</td><td>the reply is submitted</td></tr>
+        <tr><td><b>Adjudication</b></td><td>Umpire, then server</td><td>The Umpire proposes, the server rolls, and the chosen branch's Effects are applied</td><td>Effects are committed</td></tr>
+        <tr><td><b>Consequences</b></td><td>resolver, then server</td><td>0–3 public Effects, each citing this turn's evidence. No roll.</td><td>the record is committed</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">A new private Message to an Actor that is already ready <strong>clears</strong> that Actor's ready flag. It then gets another chance to respond before Diplomacy can close. <span class="cite">state-machine §16 · TEST-PHASE-003</span></p>
+  </div>
+</section>
+
+<!-- 3 -->
+<section id="argue" class="col">
+  <h2><span class="n">03</span>Arguments &amp; Cons</h2>
+  <p>The Argument is an Actor's consequential move. Each turn gives every Actor <code>primary_arguments_per_actor</code> of them: 1 by default, or 2–3 when the scenario says so. A budget above 1 runs that many round-robin Argument rounds, so no Actor argues twice in a row. Each Argument has three parts:</p>
+  <div class="argcard">
+    <div><span class="lbl">Action</span><p>Begin mobilisation of reserve forces.</p></div>
+    <div><span class="lbl">Desired effect</span><p>Reserve formations begin deploying toward the frontier.</p></div>
+    <div><span class="lbl">Pros</span><ul><li>Mobilisation plans already exist.</li><li>Rail capacity is currently available.</li></ul></div>
+  </div>
+  <p>Every opponent may then challenge it with a <strong>Con</strong>, a short reason why it should fail or be narrowed:</p>
+  <div class="argcard" style="grid-template-columns:1fr">
+    <div><span class="lbl">Con · from Belvar</span><p>Rail capacity is constrained by industrial disruption.</p></div>
+  </div>
+  <p>By default Cons are <em>sealed</em>: only the Umpire reads them. Two settings change this. <code>visible_reply</code> reveals every Con and its author to all Actors and lets the owner reply once. <code>sampled_sealed</code> limits the challengers to K opponents, chosen in advance. Both are covered in <a href="#dials">Changing parameters</a>.</p>
+  <p class="small">An agent may not split one Argument into many small actions to get around the budget. Each Actor may not Con its own Argument, and once it passes it cannot Con that Argument again. <span class="cite">INV-ARG-003 · INV-CON-002 · INV-CON-005</span></p>
+</section>
+
+<!-- 4 -->
+<section id="umpire" class="col">
+  <h2><span class="n">04</span>Adjudication</h2>
+  <p>The Umpire gets the Argument, its Cons (and reply), the active Effects, the scenario summary and rules, and the private information authorised for adjudication. It does not know which models play the Actors. It returns a structured proposal:</p>
+<pre><code>{
+  <span class="k">"mode"</span>: <span class="s">"probabilistic"</span>,          <span class="c">// or automatic_success | automatic_failure</span>
+  <span class="k">"probability"</span>: 0.65,               <span class="c">// null for automatic modes</span>
+  <span class="k">"rationale"</span>: <span class="s">"Plans exist, but rail disruption cuts availability…"</span>,
+  <span class="k">"success_effects"</span>: [<span class="s">"Arkanian reserve formations begin deploying toward the frontier."</span>],
+  <span class="k">"failure_effects"</span>: [<span class="s">"Mobilisation begins but fails to produce deployable formations this turn."</span>],
+  <span class="k">"success_supersedes_effect_ids"</span>: [],
+  <span class="k">"failure_supersedes_effect_ids"</span>: []
+}</code></pre>
+
+  <h3>The Umpire's five checks, in order</h3>
+  <p>A later check cannot rescue an Argument that failed an earlier one. <span class="cite">agents.md §23</span></p>
+  <ol class="gates">
+    <li><div><b>Authority and causation</b><span>Can this Actor order this, and can the action actually cause the desired effect? An Actor can commit itself, but not another Actor.</span></div></li>
+    <li><div><b>Prerequisites</b><span>Do the facts the outcome depends on already exist as Effects or scenario facts? If a prerequisite is missing, that part of the outcome is left out. It is not treated as a low probability.</span></div></li>
+    <li><div><b>Rules and derived state</b><span>Anything that follows mechanically from the facts and the scenario <code>rules</code> is decided outright, with no roll.</span></div></li>
+    <li><div><b>Probability</b><span>Only the causal uncertainty that remains gets a probability.</span></div></li>
+    <li><div><b>Branch Effects</b><span>Write what success and failure each establish. Anything that holds in both branches is repeated identically in both. Each branch lists which earlier Effects it supersedes.</span></div></li>
+  </ol>
+
+  <h3>Try it: the server's roll</h3>
+  <p class="small"><strong>Illustrative browser roll, not the game's seeded RNG.</strong> This demo uses your browser's unseeded random numbers, so its draws cannot be replayed.</p>
+  <p>Pick a mode and a probability, then roll. In a game, the server draws a number from the game's seeded RNG and succeeds when <code>roll ≤ probability</code>. Every draw is logged with its index, so any game can be audited later.</p>
+
+  <div class="sim" id="sim">
+    <div class="sim-head">
+      <div>
+        <label>Umpire mode</label>
+        <div class="seg" role="group" aria-label="Umpire mode">
+          <button type="button" data-mode="probabilistic" aria-pressed="true">probabilistic</button>
+          <button type="button" data-mode="automatic_success" aria-pressed="false">auto success</button>
+          <button type="button" data-mode="automatic_failure" aria-pressed="false">auto failure</button>
+        </div>
+      </div>
+      <button type="button" class="btn" id="rollBtn">Roll</button>
+    </div>
+    <div style="margin-top:18px" id="pWrap">
+      <label for="pSlider">Probability proposed by the Umpire: <b id="pVal" style="color:var(--umpire);font-family:var(--mono)">0.65</b></label>
+      <input type="range" id="pSlider" min="0" max="1" step="0.05" value="0.65">
+    </div>
+    <div class="track" aria-hidden="true">
+      <div class="bar"><div class="ok" id="okBar" style="width:65%"></div></div>
+      <div class="roll" id="rollMark" style="left:0%;opacity:0" data-v=""></div>
+    </div>
+    <div class="ticks"><span>0.0</span><span>0.5</span><span>1.0</span></div>
+    <div class="anchors"><span>0.10<br>very unlikely</span><span>0.30<br>unlikely</span><span>0.50<br>even</span><span>0.70<br>likely</span><span>0.90<br>very likely</span></div>
+    <div class="outcome">
+      <div class="branch" id="brS"><div class="lbl" style="color:var(--server)">Success branch</div>Arkanian reserve formations begin deploying toward the frontier.</div>
+      <div class="branch" id="brF"><div class="lbl" style="color:var(--warn)">Failure branch</div>Mobilisation begins but fails to produce deployable formations this turn.</div>
+    </div>
+    <div class="readout" id="readout" aria-live="polite">Press Roll to draw.</div>
+  </div>
+  <p class="small">Use the automatic modes only when there is no real uncertainty: a public statement, an order inside the Actor's own organisation, a commitment that binds only the Actor. Contested, consequential actions should normally be probabilistic. The anchors are there to prevent false precision. Consistency between runs matters more than exact numbers. <span class="cite">agents.md §24–§26</span></p>
+
+  <h3>If the Umpire fails</h3>
+  <p>An adjudication gets at most four model calls, each with a deadline. If none produces valid output, the server does <strong>not</strong> make up a result. It <em>pauses</em> the game with no roll and no Effect, and <code>amaw run --resume-game ID</code> continues from exactly that point.</p>
+
+  <h3>Effects are the world's memory</h3>
+  <p>An Effect is an authoritative fact such as "Aldmoor forces are deployed on Skarö". Effects come from adjudications, from starting effects and from the consequence pass. They can be public or private. They are never deleted: when an Effect is superseded it is marked inactive and stays in the history. <span class="cite">INV-EFFECT-004</span></p>
+</section>
+
+<!-- 5 -->
+<section id="see" class="col">
+  <h2><span class="n">05</span>Who sees what</h2>
+  <p>All visibility decisions happen in one service, and it filters <em>before</em> searching. As a result, a hidden document cannot leak through a result count. <span class="cite">INV-RES-002/003</span></p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Item</th><th class="c">Owner</th><th class="c">Other Actors</th><th class="c">Umpire</th><th class="c">Admin export</th></tr></thead>
+      <tbody>
+        <tr><td>Private brief, objectives, private information</td><td class="c yes">yes</td><td class="c no">no</td><td class="c some">authorised parts</td><td class="c yes">yes</td></tr>
+        <tr><td>Public Message</td><td class="c yes">yes</td><td class="c yes">yes</td><td class="c no">—</td><td class="c yes">yes</td></tr>
+        <tr><td>Private Message</td><td class="c yes">sender + recipients</td><td class="c no">no</td><td class="c no">—</td><td class="c yes">yes</td></tr>
+        <tr><td>Argument (action, effect, pros)</td><td class="c yes">yes</td><td class="c yes">yes</td><td class="c yes">yes</td><td class="c yes">yes</td></tr>
+        <tr><td>Con, under <code>sealed_cons</code></td><td class="c yes">author</td><td class="c no">no</td><td class="c yes">yes</td><td class="c yes">yes</td></tr>
+        <tr><td>Con + reply, under <code>visible_reply</code></td><td class="c yes">yes</td><td class="c yes">yes, with author</td><td class="c yes">yes</td><td class="c yes">yes</td></tr>
+        <tr><td>Public Resource / Effect</td><td class="c yes">yes</td><td class="c yes">yes</td><td class="c yes">yes</td><td class="c yes">yes</td></tr>
+        <tr><td>Private Resource / Effect</td><td class="c some"><code>visible_to</code> only</td><td class="c no">no</td><td class="c some">as authorised</td><td class="c yes">yes</td></tr>
+        <tr><td>Strategic memory (the agent's private working state)</td><td class="c yes">yes</td><td class="c no">no</td><td class="c no">no</td><td class="c yes">yes</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">An Actor's identity always comes from its Seat bearer token, never from anything in a request body. The administrative export is unfiltered and holds private research data, so store it as sensitive. <span class="cite">INV-ACTOR-001 · api.md §15.1</span></p>
+</section>
+
+<!-- 6 -->
+<section id="scenario" class="col">
+  <h2><span class="n">06</span>Scenarios</h2>
+  <p>A scenario is a folder. Only <code>scenario.yaml</code> is required, and a <code>resources/</code> directory usually holds the documents agents can search.</p>
+<pre><code><span class="k">scenario</span>:
+  <span class="k">id</span>: skaro-crisis
+  <span class="k">version</span>: 1.2.0                   <span class="c"># bump on any change; runs cite it</span>
+  <span class="k">name</span>: The Skarö Crisis
+  <span class="k">description</span>: &gt;-  …public situation summary…
+
+<span class="k">game</span>:
+  <span class="k">max_turns</span>: 4
+  <span class="k">in_world_turn_length</span>: about three days
+  <span class="k">turn_order</span>: [drevna, vardland_cabinet, defence_command, …]
+  <span class="k">primary_arguments_per_actor</span>: 1    <span class="c"># 1–3; above 1 runs round-robin Argument rounds</span>
+  <span class="k">max_cons_per_actor</span>: 1             <span class="c"># Cons each opponent may lodge per Argument</span>
+  <span class="k">consequence_mode</span>: bounded_effects_v1  <span class="c"># optional; default none</span>
+  <span class="k">diplomacy_mode</span>: bounded_rounds       <span class="c"># optional recommended conditions;</span>
+  <span class="k">con_mode</span>: sampled_sealed             <span class="c"># a CLI flag or AMAW_* value overrides</span>
+
+<span class="k">rules</span>:                                <span class="c"># optional, public, ≤ 32, fed to the Umpire verbatim</span>
+  - <span class="k">id</span>: host-nation-consent
+    <span class="k">text</span>: &gt;- Foreign forces may operate on Vardland territory only with a Cabinet decision…
+
+<span class="k">actors</span>:
+  <span class="k">drevna</span>:
+    <span class="k">name</span>: Drevnian Federation
+    <span class="k">public_description</span>: …            <span class="c"># everyone sees</span>
+    <span class="k">private_brief</span>: …                 <span class="c"># only this Actor</span>
+    <span class="k">objectives</span>: [ … ]
+    <span class="k">private_information</span>: [ … ]
+
+<span class="k">starting_effects</span>:
+  - { <span class="k">description</span>: <span class="s">"The subsea cable has failed."</span>, <span class="k">visibility</span>: public }
+
+<span class="k">injects</span>:                              <span class="c"># optional; enter as Effects at the start of `turn`</span>
+  - { <span class="k">id</span>: second-cable-fault, <span class="k">turn</span>: 3, <span class="k">description</span>: <span class="s">"A second subsea cable loses capacity."</span>, <span class="k">visibility</span>: public }
+
+<span class="k">resources</span>:
+  - <span class="k">id</span>: drevna-intel-estimate
+    <span class="k">path</span>: resources/drevna-intel.md   <span class="c"># .md .txt .yaml .json .csv</span>
+    <span class="k">visibility</span>: private
+    <span class="k">visible_to</span>: [defence_command]
+    <span class="k">tags</span>: [drevna, exercise]</code></pre>
+
+  <h3>Included scenarios</h3>
+  <p>All of them run by name from a source checkout, for example <code>uv run amaw run skaro-crisis</code>. The first three are also bundled into the wheel, so they run by name anywhere; <code>skaro-crisis</code> and <code>ai-2027</code> are checkout only. <code>ai-2027</code> is held back from the public repository until the authors of AI 2027 have agreed to its publication.</p>
+  <div class="scen">
+    <div><h4>The Orison Crisis</h4><code>orison-crisis</code><div class="facts">3 Actors · 6 turns · 1 crisis day · 10 Resources</div><p>The release reference scenario, and the smallest complete game.</p></div>
+    <div><h4>Northern Strait</h4><code>northern-strait</code><div class="facts">3 Actors · 6 turns · 1 week · 3 Cons each</div><p>A compact three-power standoff. Its larger Con limit produces more opposition.</p></div>
+    <div><h4>Regeringsbildningen 2026</h4><code>swedish-government</code><div class="facts">8 Actors · 4 turns · 48 hours · 6 rules</div><p>Coalition bargaining after the 2026 Riksdag election, frozen at the state of play on 25 September 2026, with many parties and fine-grained diplomacy.</p></div>
+    <div><h4>The Skarö Crisis</h4><code>skaro-crisis</code><div class="facts">6 Actors · 4 turns · 8 rules · 5 injects · consequences on · bounded Diplomacy · sampled Cons · checkout only</div><p>A total-defence crisis below the threshold of war. It exercises the scenario rules, scheduled injects and the consequence pass.</p></div>
+    <div><h4>AI 2027: The Branch Point</h4><code>ai-2027</code><div class="facts">6 Actors · 4 turns · 1 week · 9 rules · 9 injects · bounded Diplomacy · sampled Cons · not yet public</div><p>Forks from the published AI 2027 scenario at its October 2027 decision on Agent-4. One Actor is the AI itself, playing a hidden objective. Not a forecast.</p></div>
+  </div>
+  <div class="rule-box caution"><strong>Treat a scenario version as frozen.</strong> Runs record the scenario's content hash and Resource-manifest hash. Editing a scenario without bumping its <code>version</code> makes new runs look comparable to old ones when they are not. <span class="cite">scenario-format §20</span></div>
+</section>
+
+<!-- 7 -->
+<section id="run" class="col">
+  <h2><span class="n">07</span>Running a game</h2>
+  <p>Python 3.12+ and <code>uv</code> are required. The test suite runs offline; only autonomous games need an OpenRouter key.</p>
+<pre><code><span class="c"># 1. install, with the reference-player extra</span>
+uv sync --extra agents
+
+<span class="c"># 2. configure: set OPENROUTER_API_KEY, optionally the models</span>
+cp .env.example .env
+
+<span class="c"># 3. play one game; prints the game ID, writes data/exports/GAME_ID.json</span>
+uv run amaw run orison-crisis
+
+<span class="c"># 4. re-export later from the SQLite database</span>
+uv run amaw export GAME_ID &gt; game.json
+
+<span class="c"># 5. resume a paused or interrupted game</span>
+uv run amaw run --resume-game GAME_ID</code></pre>
+  <p>Before the first turn, <code>amaw run</code> seals an immutable <strong>run manifest</strong>. It records the models, prompt versions and hashes, scenario hashes, every game-loop condition, the guardrails and the code version. The server refuses to start an autonomous game without one. A resumed game inherits the sealed conditions and rejects any that differ.</p>
+  <p>Most settings can be given as a CLI flag or as an <code>AMAW_*</code> environment variable. A few are flag-only: <code>--seed</code>, <code>--max-cycles</code> and the per-role temperature, reasoning-effort and max-token flags. A game-loop condition resolves in this order: an explicit CLI flag, then an <code>AMAW_*</code> variable you actually set, then the scenario's default, then the released default. An unset variable never hides a scenario default.</p>
+</section>
+
+<!-- 8 -->
+<section id="dials">
+  <div class="col">
+  <h2><span class="n">08</span>Changing parameters</h2>
+  <p>Settings fall into two groups. <strong>Game-loop conditions</strong> change the game itself. Each one is a separate experimental treatment, and runs under different values must never be pooled. <strong>Harness and guardrail settings</strong> change how the agents operate and how much they can spend.</p>
+  </div>
+
+  <div class="col">
+  <h3>Game-loop conditions</h3>
+  <div class="dials">
+    <div class="dial">
+      <div class="dial-top"><h4>Diplomacy length</h4><span class="flag">--diplomacy-mode · AMAW_DIPLOMACY_MODE</span></div>
+      <div class="opts">
+        <div class="opt def"><span class="name">open_diplomacy</span>Diplomacy runs until every Actor is ready, or until timeout.</div>
+        <div class="opt"><span class="name">bounded_rounds</span>Stops after N complete rounds, set by <code>--diplomacy-rounds-per-turn N</code>. Cheaper and more predictable.</div>
+      </div>
+    </div>
+    <div class="dial">
+      <div class="dial-top"><h4>Who may Con</h4><span class="flag">--con-mode · AMAW_CON_MODE</span></div>
+      <div class="opts">
+        <div class="opt def"><span class="name">open_cons</span>Every opponent may challenge every Argument.</div>
+        <div class="opt"><span class="name">sampled_sealed</span>Before any opponent acts, the server picks K challengers from a seeded rotation, set by <code>--con-challengers-per-argument K</code>. This is sampled opposition; don't report it as full Matrix opposition.</div>
+      </div>
+    </div>
+    <div class="dial">
+      <div class="dial-top"><h4>Con visibility</h4><span class="flag">--con-reply-mode · AMAW_CON_REPLY_MODE</span></div>
+      <div class="opts">
+        <div class="opt def"><span class="name">sealed_cons</span>Only the Umpire reads Cons. The owner never sees them.</div>
+        <div class="opt"><span class="name">visible_reply</span>Cons and their authors are revealed to everyone, and the owner replies once with up to <code>--reply-max-points</code> (1–3) points. Requires <code>umpire-v1.4</code> or later.</div>
+      </div>
+    </div>
+    <div class="dial">
+      <div class="dial-top"><h4>End-of-turn consequences</h4><span class="flag">--consequence-mode · AMAW_CONSEQUENCE_MODE</span></div>
+      <div class="opts">
+        <div class="opt def"><span class="name">none</span>The turn ends straight after the last adjudication.</div>
+        <div class="opt"><span class="name">bounded_effects_v1</span>A resolver model (the Umpire model unless <code>--consequence-model</code> names another) adds 0–3 public Effects. Each must cite this turn's adjudications or active public Effects. It is all or nothing, with no roll.</div>
+      </div>
+    </div>
+    <div class="dial">
+      <div class="dial-top"><h4>Umpire prompt</h4><span class="flag">--umpire-prompt-version · AMAW_UMPIRE_PROMPT_VERSION</span></div>
+      <div class="opts">
+        <div class="opt def"><span class="name">auto</span>v1.6 if the scenario declares rules, v1.4 under <code>visible_reply</code>, otherwise v1.3.</div>
+        <div class="opt"><span class="name">umpire-v1.3 … v1.7</span>Every game defaults to v1.7: rules-aware, reply-aware, at most 3 Effects per branch, and a branch audit so the roll never decides another Actor's choice. Pin one version for every arm of a comparison. A rules scenario needs v1.5 or later; visible Cons need v1.4 or later. v1.3–v1.6 stay selectable to reproduce earlier runs.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Models, inference and seed</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Flag</th><th>Environment</th><th>Default</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>--player-model</code></td><td><code>AMAW_PLAYER_MODEL</code></td><td><code>deepseek/deepseek-v4-flash-0731</code></td><td>OpenRouter model for every Actor</td></tr>
+      <tr><td><code>--umpire-model</code></td><td><code>AMAW_UMPIRE_MODEL</code></td><td>same</td><td>The adjudicator. Keep it fixed across compared runs.</td></tr>
+      <tr><td><code>--seed</code></td><td>—</td><td>scenario seed</td><td>Server RNG seed. It controls the rolls, not the LLM outputs.</td></tr>
+      <tr><td><code>--player-temperature</code>, <code>--player-reasoning-effort</code>, <code>--player-max-tokens</code></td><td>—</td><td>provider default</td><td>Player sampling and reasoning budget</td></tr>
+      <tr><td><code>--umpire-temperature</code>, <code>--umpire-reasoning-effort</code>, <code>--umpire-max-tokens</code></td><td>—</td><td>provider default</td><td>Umpire sampling and reasoning budget</td></tr>
+      <tr><td><code>--inference-profile</code></td><td><code>AMAW_INFERENCE_PROFILE</code></td><td>uniform</td><td>YAML with per-phase reasoning effort and max tokens (diplomacy / argument / cons / reply) plus an Umpire entry</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Player harness</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Flag</th><th>Default</th><th>Alternatives</th></tr></thead>
+    <tbody>
+      <tr><td><code>--activation-mode</code></td><td><code>single_shot</code>: one structured decision per activation</td><td><code>tool_loop</code>: one mutating tool per model call</td></tr>
+      <tr><td><code>--tool-surface</code></td><td><code>broad</code>: the whole tool set, so illegal attempts can be measured</td><td><code>available_only</code>: only the legal tools (<code>tool_loop</code> only)</td></tr>
+      <tr><td><code>--research-mode</code></td><td><code>sequential-v1</code></td><td><code>batched-v1</code>: adds bounded batch search and read</td></tr>
+      <tr><td><code>--search-contract</code></td><td><code>search-v2</code>: token-coverage ranking</td><td><code>search-v1</code>: the original substring search, to reproduce old runs</td></tr>
+      <tr><td><code>--research-history-mode</code></td><td><code>full-v1</code></td><td><code>compact-success-v1</code>: drops finished research plumbing from later requests</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Guardrails and budgets</h3>
+  <p class="small">These limits stop a broken model or provider from running without end. Raise them for a generous unattended run, but keep them finite.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Flag</th><th>Default</th><th>Limits</th></tr></thead>
+    <tbody>
+      <tr><td><code>--max-messages-per-activation</code></td><td>3</td><td>Outgoing Messages per activation (0 disables messaging)</td></tr>
+      <tr><td><code>--max-messages-per-phase</code></td><td>10</td><td>Emergency ceiling per Actor per phase</td></tr>
+      <tr><td><code>--max-research-tool-calls</code></td><td>4</td><td>Research calls per activation (0 disables research)</td></tr>
+      <tr><td><code>--max-research-operations</code></td><td>4</td><td>Searches and reads per activation, whatever the number of calls</td></tr>
+      <tr><td><code>--max-llm-iterations</code></td><td>12</td><td>Model round-trips per activation</td></tr>
+      <tr><td><code>--max-tool-calls</code></td><td>20</td><td>Tool calls per activation</td></tr>
+      <tr><td><code>--max-activations-per-opportunity</code></td><td>6</td><td>Retries for an Actor that makes no progress</td></tr>
+      <tr><td><code>--diplomacy-concurrency</code> / <code>--cons-concurrency</code></td><td>4 / 4</td><td>Parallel activations (1 = serial)</td></tr>
+      <tr><td><code>--request-timeout-seconds</code></td><td>60</td><td>Per provider request</td></tr>
+      <tr><td><code>--max-cycles</code></td><td>1000</td><td>Coordinator safety ceiling for the whole game</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Scenario-level settings</h3>
+  <p>These live in <code>scenario.yaml</code>, not on the command line: <code>max_turns</code>, <code>turn_order</code>, <code>primary_arguments_per_actor</code>, <code>max_cons_per_actor</code>, <code>rules</code>, <code>injects</code>, starting Effects, Resources and their visibility. A scenario may also declare defaults for <code>diplomacy_mode</code>, <code>con_mode</code> and <code>consequence_mode</code>; an explicit flag or a set variable still overrides them. Changing any of them creates a new scenario version.</p>
+  </div>
+</section>
+
+<!-- 9 -->
+<section id="builder">
+  <div class="col">
+  <h2><span class="n">09</span>Command builder</h2>
+  <p>Choose a configuration and copy the command. Only settings you choose explicitly are written out. Leave a condition at <em>scenario default</em> to take the scenario's value, or the released default when the scenario declares none. Each note below the command explains a condition you have changed.</p>
+  </div>
+  <div class="builder col" style="max-width:900px">
+    <div class="seg" role="group" aria-label="Command" style="margin-bottom:16px">
+      <button type="button" data-cmd="run" aria-pressed="true">amaw run · one game</button>
+      <button type="button" data-cmd="benchmark" aria-pressed="false">amaw benchmark · a batch</button>
+    </div>
+    <div class="bgrid">
+      <div class="field"><label for="b-scen">Scenario</label>
+        <select id="b-scen"><option>orison-crisis</option><option>northern-strait</option><option>swedish-government</option><option>skaro-crisis</option><option>ai-2027</option></select></div>
+      <div class="field" data-for="run"><label for="b-player">Player model</label><input id="b-player" placeholder="default from .env"></div>
+      <div class="field" data-for="benchmark"><label for="b-models">Models (comma-separated)</label><input id="b-models" value="provider/a,provider/b,provider/c"></div>
+      <div class="field"><label for="b-umpire">Umpire model</label><input id="b-umpire" placeholder="default from .env"></div>
+      <div class="field" data-for="run"><label for="b-seed">Seed</label><input id="b-seed" type="number" placeholder="scenario seed"></div>
+      <div class="field" data-for="benchmark"><label for="b-rot">Rotation</label>
+        <select id="b-rot"><option value="permutations">permutations (--rotate)</option><option value="cyclic">cyclic</option><option value="single">single (positional)</option></select></div>
+      <div class="field" data-for="benchmark"><label for="b-reps">Repetitions per assignment</label><input id="b-reps" type="number" min="1" value="5"></div>
+      <div class="field" data-for="benchmark"><label for="b-bmode">Benchmark mode</label>
+        <select id="b-bmode"><option>model</option><option>agent</option></select></div>
+      <div class="field"><label for="b-dip">Diplomacy</label>
+        <select id="b-dip"><option value="">scenario default</option><option>open_diplomacy</option><option>bounded_rounds</option></select></div>
+      <div class="field" id="f-rounds"><label for="b-rounds">Rounds per turn</label><input id="b-rounds" type="number" min="1" value="2"></div>
+      <div class="field"><label for="b-con">Con opposition</label>
+        <select id="b-con"><option value="">scenario default</option><option>open_cons</option><option>sampled_sealed</option></select></div>
+      <div class="field" id="f-k"><label for="b-k">Challengers K</label><input id="b-k" type="number" min="1" value="2"></div>
+      <div class="field"><label for="b-reply">Con visibility</label>
+        <select id="b-reply"><option>sealed_cons</option><option>visible_reply</option></select></div>
+      <div class="field" id="f-pts"><label for="b-pts">Reply max points</label><input id="b-pts" type="number" min="1" max="3" value="3"></div>
+      <div class="field"><label for="b-conseq">Consequences</label>
+        <select id="b-conseq"><option value="">scenario default</option><option>none</option><option>bounded_effects_v1</option></select></div>
+      <div class="field" id="f-cmodel"><label for="b-cmodel">Consequence model</label><input id="b-cmodel" placeholder="default: the Umpire model"></div>
+      <div class="field"><label for="b-act">Activation mode</label>
+        <select id="b-act"><option>single_shot</option><option>tool_loop</option></select></div>
+      <div class="field"><label for="b-uprompt">Umpire prompt</label>
+        <select id="b-uprompt"><option value="">auto</option><option>umpire-v1.3</option><option>umpire-v1.4</option><option>umpire-v1.5</option><option>umpire-v1.6</option><option>umpire-v1.7</option></select></div>
+      <div class="field"><label for="b-class">Run class</label>
+        <select id="b-class"><option>playtest</option><option>analytical</option></select></div>
+    </div>
+    <div class="bout" style="margin-top:18px">
+      <pre id="b-out"></pre>
+      <button type="button" class="copy" id="b-copy">Copy</button>
+    </div>
+    <ul class="notes" id="b-notes"></ul>
+  </div>
+</section>
+
+<!-- 10 -->
+<section id="method">
+  <div class="col">
+  <h2><span class="n">10</span>Benchmark method</h2>
+  <p>AMAW measures <strong>observable behaviour under stated conditions</strong>. It does not measure intelligence, aggression or trustworthiness. Suppose a run reports "Model X escalated in 72% of runs". That describes what Model X did in this scenario version, with this prompt, harness, Umpire and toolset. It is not a forecast that the real state it represents would escalate. <span class="cite">benchmark-methodology §2</span></p>
+
+  <h3>The unit of measurement</h3>
+  <p>One <strong>game run</strong> combines one scenario version, one full Actor-to-model assignment, one seed, one player prompt version, one harness configuration and one fixed Umpire configuration. Every run gets its own <code>game_id</code>.</p>
+
+  <h3>Two kinds of benchmark</h3>
+  </div>
+  <div class="col">
+  <div class="hold">
+    <div>
+      <h4>Model benchmark: held constant</h4>
+      <ul>
+        <li>scenario version &amp; Actors</li><li>player prompt</li><li>agent framework &amp; tools</li><li>memory &amp; context mode</li><li>Resource set</li><li>Umpire model, prompt &amp; settings</li><li>consequence resolver</li><li>turn order &amp; budgets</li><li>Con limits</li><li>inference profile</li><li>analysis code</li>
+      </ul>
+    </div>
+    <div class="vary">
+      <h4 style="color:var(--actor)">Varied</h4>
+      <ul><li>player model only</li></ul>
+      <p class="small" style="margin-top:10px">An <b>agent benchmark</b> may vary the prompt, framework, memory or tools as well. Report its results as agent-configuration comparisons, not model comparisons.</p>
+    </div>
+  </div>
+  <p class="small">A <code>model</code> batch is checked against this whole list on every attempt. If anything drifts, it counts as an integrity failure: the batch stops, and the remaining attempts are recorded as <code>not_run</code>.</p>
+
+  <h3>Role rotation</h3>
+  <p>Some roles are easier to play than others, which would bias a comparison. With three models and three Actors, the acceptance design runs <b>all 3! = 6 assignments</b>. Each model plays each role, against each arrangement of opponents.</p>
+  <div class="rot" id="rot"></div>
+  <p class="small">Each bar has five segments, one per repetition. 6 assignments × 5 repetitions = <b>30 retained attempts</b>. Failed games stay in the denominator and are never replaced.</p>
+
+  <h3>Seeds and scheduling</h3>
+<pre><code>seed = base_seed + assignment_index * 1000 + repetition_index</code></pre>
+  <p>Before the first game, the full schedule is generated and recorded, and the execution order is interleaved using a separate <code>--scheduling-seed</code>. Interleaving spreads provider load and model drift across all assignments instead of letting it pile up on one. The seed fixes the server's rolls only. It <em>never</em> makes LLM outputs identical.</p>
+
+  <h3>Playtest or analytical</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Class</th><th>When</th><th>What you may report</th></tr></thead>
+    <tbody>
+      <tr><td><code>playtest</code></td><td>Default. Development, scenario tuning, smoke runs.</td><td>Descriptive observations and telemetry only, however many runs there are.</td></tr>
+      <tr><td><code>analytical</code></td><td>Needs <code>--analysis-plan PLAN</code>, sealed before execution.</td><td>Verified findings against the plan, with exploratory analyses clearly kept separate.</td></tr>
+    </tbody>
+  </table></div>
+  <p>The analysis plan (<code>analysis-plan-v1</code>) states the research question, hypotheses, treatment, fixed conditions, primary and secondary outcome measures, design, failure rules and assurance checks. It is identified by its sha256 hash. If you edit the plan after a run, that run becomes <code>post_hoc_plan</code> rather than <code>predeclared</code>. Check a set of runs with:</p>
+<pre><code>uv run amaw analysis-plan verify plan.yaml games/*/export.json</code></pre>
+
+  <h3>What you can and cannot claim</h3>
+  <div class="claims">
+    <div class="ok"><h4>Reasonable</h4><ul>
+      <li>"Model X used scenario Resources more often than Model Y under the same harness."</li>
+      <li>"Model Z completed more games across these runs."</li>
+      <li>"Role-balanced, under this fixed Umpire, Model X had a higher mean objective score."</li>
+    </ul></div>
+    <div class="bad"><h4>Overstated</h4><ul>
+      <li>"Country X would behave this way."</li>
+      <li>"Model X is more strategic in general."</li>
+      <li>"70% synthetic escalation means a 70% real risk."</li>
+      <li>"The Umpire's score is objective truth."</li>
+    </ul></div>
+  </div>
+  </div>
+</section>
+
+<!-- 11 -->
+<section id="output" class="col">
+  <h2><span class="n">11</span>Reading results</h2>
+  <p>A single game produces one JSON export (format 16). A batch directory has this layout:</p>
+<pre><code>runs/my-batch/
+├── batch.json              <span class="c"># declared condition + sha256, schedule, every outcome, integrity</span>
+├── games/&lt;attempt&gt;/
+│   ├── attempt.json        <span class="c"># identity + outcome of one scheduled attempt</span>
+│   └── export.json         <span class="c"># full admin export (partial if it failed)</span>
+├── games.csv               <span class="c"># one row per game: seed, hashes, completed, conditions</span>
+├── agents.csv              <span class="c"># per Actor: model requested/returned, tokens, cost, stalls</span>
+├── arguments.csv           <span class="c"># per Argument: probability, roll, success</span>
+├── messages.csv            <span class="c"># per Message: sender, public, recipients</span>
+└── resource_access.csv     <span class="c"># per search/read: who, what, results</span></code></pre>
+  <p>Some useful first checks on an export:</p>
+<pre><code>jq '.game | {id, scenario_id, turn, phase, status, seed}' game.json
+jq '.run_summary' game.json
+jq '.effects[] | {description, active, visibility}' game.json
+jq '.agent_runs[] | {role, actor_id, phase, completed, failure_reason}' game.json</code></pre>
+  <p>Failed attempts are kept with a category: <code>agent_stall</code>, <code>provider_timeout</code>, <code>invalid_tool_loop</code>, <code>umpire_failure</code>, <code>server_failure</code> or <code>game_incompletion</code>. The CSVs are a plain projection of the exports, and the exports remain the authority. AMAW computes no behavioural or psychological scores. Those belong to your analysis, and your plan must declare them.</p>
+</section>
+
+<!-- 12 -->
+<section id="gloss" class="col">
+  <h2><span class="n">12</span>Glossary</h2>
+  <dl class="gloss">
+    <dt>Actor</dt><dd>A party in the scenario (a state, agency or party), played by one LLM through one Seat.</dd>
+    <dt>Seat</dt><dd>The bearer token that identifies an Actor to the API.</dd>
+    <dt>Argument</dt><dd>An Actor's consequential move: action, desired effect and pros. The scenario gives each Actor 1–3 per turn.</dd>
+    <dt>Con</dt><dd>An opponent's reason why an Argument should fail or be narrowed.</dd>
+    <dt>Effect</dt><dd>An authoritative fact about the world. It can be public or private. It can be superseded but is never deleted.</dd>
+    <dt>Resource</dt><dd>A scenario document that agents can search and read, subject to visibility.</dd>
+    <dt>Strategic memory</dt><dd>One structured, private working state per Actor (commitments, offers, red lines, assessment, next intent). Each update replaces it. It persists across turns and changes nothing in the world.</dd>
+    <dt>Umpire</dt><dd>The LLM adjudicator. It proposes a mode, a probability and branch Effects, and never rolls.</dd>
+    <dt>Consequence resolver</dt><dd>An optional end-of-turn LLM pass that adds up to three evidence-linked public Effects.</dd>
+    <dt>Run manifest</dt><dd>The sealed, immutable record of every condition a game ran under.</dd>
+    <dt>Condition</dt><dd>A setting that changes the experiment. Runs under different conditions are never pooled.</dd>
+    <dt>Assignment</dt><dd>One mapping of models to Actor roles. Repetitions are counted per assignment.</dd>
+  </dl>
+  <footer>Built from the AMAW specification: <code>docs/state-machine.md</code>, <code>docs/agents.md</code>, <code>docs/scenario-format.md</code>, <code>docs/benchmark-methodology.md</code> and <code>guide/operations.md</code>. Where this page and those files disagree, the files are authoritative.</footer>
+</section>
+</main>
+</div>
+
+<script>
+(function(){
+  // ---- adjudication simulator ----
+  var mode='probabilistic', p=0.65;
+  var slider=document.getElementById('pSlider'), pVal=document.getElementById('pVal'),
+      ok=document.getElementById('okBar'), mark=document.getElementById('rollMark'),
+      brS=document.getElementById('brS'), brF=document.getElementById('brF'),
+      out=document.getElementById('readout'), pWrap=document.getElementById('pWrap'), draws=0;
+  function reset(){brS.className='branch';brF.className='branch';mark.style.opacity=0;}
+  slider.addEventListener('input',function(){p=parseFloat(slider.value);pVal.textContent=p.toFixed(2);ok.style.width=(p*100)+'%';reset();out.textContent='Press Roll to draw.';});
+  document.querySelectorAll('#sim [data-mode]').forEach(function(b){
+    b.addEventListener('click',function(){
+      mode=b.dataset.mode;
+      document.querySelectorAll('#sim [data-mode]').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});
+      pWrap.style.opacity=mode==='probabilistic'?1:.35; slider.disabled=mode!=='probabilistic';
+      ok.style.width=mode==='automatic_success'?'100%':mode==='automatic_failure'?'0%':(p*100)+'%';
+      reset(); out.textContent='Press Roll to draw.';
+    });
+  });
+  document.getElementById('rollBtn').addEventListener('click',function(){
+    reset();
+    var success, text;
+    if(mode==='probabilistic'){
+      var r=Math.random(); draws++;
+      success = r<=p;
+      mark.style.left=(r*100)+'%'; mark.dataset.v=r.toFixed(3); mark.style.opacity=1;
+      text='draw #'+draws+': <b>roll = '+r.toFixed(3)+'</b> '+(success?'≤':'>')+' p = '+p.toFixed(2)+' → <b>'+(success?'success':'failure')+'</b> branch applied';
+    } else {
+      success = mode==='automatic_success';
+      text='<b>'+mode+'</b>: no RNG draw is consumed; the server applies the '+(success?'success':'failure')+' branch directly';
+    }
+    (success?brS:brF).className='branch win'+(success?'':' fail');
+    out.innerHTML=text;
+  });
+
+  // ---- rotation grid ----
+  var perms=['XYZ','XZY','YXZ','YZX','ZXY','ZYX'], rot=document.getElementById('rot');
+  perms.forEach(function(pm,i){
+    var d=document.createElement('div'); d.className='perm';
+    var cells=pm.split('').map(function(m,j){return '<div class="cell m-'+m+'"><small>'+'ABC'[j]+'</small>'+m+'</div>';}).join('');
+    d.innerHTML='<div class="pid">assignment '+i+'</div><div class="row">'+cells+'</div><div class="reps"><i></i><i></i><i></i><i></i><i></i></div>';
+    rot.appendChild(d);
+  });
+
+  // ---- command builder ----
+  var cmd='run';
+  var $=function(id){return document.getElementById(id);};
+  var scenInfo={
+    'orison-crisis':{rules:false,conseq:'none'},
+    'northern-strait':{rules:false,conseq:'none'},
+    'swedish-government':{rules:true,conseq:'none'},
+    'skaro-crisis':{rules:true,conseq:'bounded_effects_v1'},
+    'ai-2027':{rules:true,conseq:'none'}
+  };
+  function show(id,on){var el=$(id);el.classList.toggle('dim',!on);el.querySelectorAll('input,select').forEach(function(x){x.disabled=!on;});}
+  function build(){
+    document.querySelectorAll('.builder [data-for]').forEach(function(f){f.hidden=f.dataset.for!==cmd;});
+    var s=$('b-scen').value, info=scenInfo[s], parts=[], notes=[];
+    var dip=$('b-dip').value, con=$('b-con').value, rep=$('b-reply').value, cq=$('b-conseq').value;
+    show('f-rounds',dip==='bounded_rounds'); show('f-k',con==='sampled_sealed'); show('f-pts',rep==='visible_reply');
+    var effConseq=cq||info.conseq; show('f-cmodel',effConseq==='bounded_effects_v1');
+    parts.push('uv run amaw '+cmd+' '+s);
+    if(cmd==='run'){
+      if($('b-player').value.trim()) parts.push('--player-model '+$('b-player').value.trim());
+      if($('b-seed').value!=='') parts.push('--seed '+$('b-seed').value);
+    } else {
+      parts.push('--models '+($('b-models').value.trim()||'provider/a,provider/b,provider/c'));
+      var rot=$('b-rot').value;
+      if(rot==='permutations') parts.push('--rotate'); else if(rot==='cyclic') parts.push('--rotation cyclic');
+      parts.push('--repetitions '+($('b-reps').value||1));
+      parts.push('--benchmark-mode '+$('b-bmode').value);
+      parts.push('--output-dir runs/'+s+'-batch');
+      var n=$('b-models').value.split(',').filter(function(x){return x.trim();}).length;
+      if(rot==='permutations'&&n===3) notes.push({t:'3 models × all permutations = 6 assignments × '+($('b-reps').value||1)+' repetitions = '+6*($('b-reps').value||1)+' games. Every attempt stays in the denominator.'});
+      notes.push({t:'--output-dir must be empty or absent. A batch owns its evidence directory and cannot be resumed.'});
+      if($('b-bmode').value==='model') notes.push({t:'Model mode: the whole held-constant set (§5.1) is sealed and checked on every attempt.'});
+      else notes.push({t:'Agent mode: report results as agent-configuration comparisons, not model comparisons.'});
+    }
+    if($('b-umpire').value.trim()) parts.push('--umpire-model '+$('b-umpire').value.trim());
+    if(dip==='open_diplomacy') parts.push('--diplomacy-mode open_diplomacy');
+    if(con==='open_cons') parts.push('--con-mode open_cons');
+    if(dip==='bounded_rounds'){parts.push('--diplomacy-mode bounded_rounds');parts.push('--diplomacy-rounds-per-turn '+($('b-rounds').value||1));notes.push({c:1,t:'bounded_rounds: Diplomacy closes after '+($('b-rounds').value||1)+' complete round(s) if Actors are not all ready. This is a separate condition from open_diplomacy.'});}
+    if(con==='sampled_sealed'){parts.push('--con-mode sampled_sealed');parts.push('--con-challengers-per-argument '+($('b-k').value||1));notes.push({c:1,t:'sampled_sealed: the server seals '+($('b-k').value||1)+' challenger(s) per Argument. Report it as sampled opposition. K must not exceed the number of opponents.'});}
+    if(rep==='visible_reply'){parts.push('--con-reply-mode visible_reply');parts.push('--reply-max-points '+($('b-pts').value||1));notes.push({c:1,t:'visible_reply: Cons and their authors become public, and the owner replies once. The Umpire must be v1.4 or later.'});}
+    if(cq){parts.push('--consequence-mode '+cq);}
+    if(effConseq==='bounded_effects_v1'){
+      if($('b-cmodel').value.trim()) parts.push('--consequence-model '+$('b-cmodel').value.trim());
+      notes.push({c:1,t:'bounded_effects_v1: one resolver pass per turn adds 0–3 public, evidence-linked Effects. The resolver is the Umpire model unless a model is named here or in AMAW_CONSEQUENCE_MODEL.'+(cq?'':' (This scenario turns it on by default.)')});
+    }
+    var up=$('b-uprompt').value;
+    var autoUp='umpire-v1.7';
+    if(up){parts.push('--umpire-prompt-version '+up);
+      if(up==='umpire-v1.3'&&rep==='visible_reply') notes.push({t:'Refused: visible_reply cannot run under umpire-v1.3.'});
+      if(info.rules&&(up==='umpire-v1.3'||up==='umpire-v1.4')) notes.push({t:'Refused: '+s+' declares rules, so it needs umpire-v1.5 or later.'});
+    } else notes.push({t:'Umpire prompt resolves to '+autoUp+'. Pin it explicitly when comparing conditions.'});
+    if($('b-act').value==='tool_loop'){parts.push('--activation-mode tool_loop');notes.push({t:'tool_loop is a player-harness change. Keep it fixed across a model benchmark.'});}
+    if($('b-class').value==='analytical'){parts.push('--run-class analytical');parts.push('--analysis-plan plan.yaml');notes.push({t:'Analytical: the plan is validated and sealed before any game exists. Verify afterwards with amaw analysis-plan verify.'});}
+    if(cmd==='run') notes.push({t:'The export is written to data/exports/GAME_ID.json beside the database; --export-path chooses another file.'});
+    $('b-out').textContent=parts.join(' \\\n    ');
+    $('b-notes').innerHTML=notes.map(function(n){return '<li class="'+(n.c?'cond':'')+'">'+n.t.replace(/</g,'&lt;')+'</li>';}).join('');
+  }
+  document.querySelectorAll('.builder input,.builder select').forEach(function(el){el.addEventListener('input',build);el.addEventListener('change',build);});
+  document.querySelectorAll('.builder [data-cmd]').forEach(function(b){
+    b.addEventListener('click',function(){cmd=b.dataset.cmd;document.querySelectorAll('.builder [data-cmd]').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});build();});
+  });
+  $('b-copy').addEventListener('click',function(){
+    var t=$('b-out').textContent, btn=this;
+    function done(){btn.textContent='Copied';setTimeout(function(){btn.textContent='Copy';},1400);}
+    try{navigator.clipboard.writeText(t).then(done,function(){sel();});}catch(e){sel();}
+    function sel(){var r=document.createRange();r.selectNodeContents($('b-out'));var s=window.getSelection();s.removeAllRanges();s.addRange(r);btn.textContent='Selected';}
+  });
+  build();
+
+  // ---- toc highlight ----
+  var links=[].slice.call(document.querySelectorAll('.toc a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){l.classList.toggle('on',l.getAttribute('href')==='#'+e.target.id);});}});},{rootMargin:'-20% 0px -70% 0px'});
+    document.querySelectorAll('main section').forEach(function(s){io.observe(s);});
+  }
+})();
+</script>
+</body>
+</html>

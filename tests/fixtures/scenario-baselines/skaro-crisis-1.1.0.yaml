@@ -1,0 +1,442 @@
+scenario:
+  id: skaro-crisis
+  name: The Skarö Crisis
+  version: 1.1.0
+  description: >-
+    A four-turn, six-actor total-defence crisis in a fictional northern European setting. The
+    island county of Skarö, which belongs to the Kingdom of Vardland, lies in the Eastern Sea
+    close to the Drevnian Federation. Skarö's only subsea power and data cable to the mainland
+    has failed. The island now runs on backup generation, while a large Drevnian naval
+    exercise continues nearby and conflicting stories about the cause spread online. No state
+    of war exists. Vardland's government, armed forces, civil-contingencies agency and Skarö's
+    county administration share responsibility for the response under overlapping rules of
+    authority. An allied partner, the Kingdom of Aldmoor, offers help that needs Vardland's
+    consent. Drevna seeks political advantage below the threshold of armed conflict. Each turn
+    represents about three days. New developments arrive at the start of turns 3 and 4 whatever
+    the Actors have done. Military posture is qualitative: there are no unit counts, ranges or
+    combat tables.
+game:
+  max_turns: 4
+  in_world_turn_length: about three days
+  turn_order:
+  - drevna
+  - vardland_cabinet
+  - defence_command
+  - civil_contingencies
+  - skaro_county
+  - aldmoor
+  primary_arguments_per_actor: 1
+  max_cons_per_actor: 1
+  consequence_mode: bounded_effects_v1
+rules:
+- id: cabinet-alert-authority
+  text: >-
+    Only the Vardland Cabinet can declare heightened alert, partial or full. A declaration
+    takes effect as a public fact from the turn it is adjudicated. Under heightened alert,
+    Defence Command may call up reservists and move units onto Skarö without further
+    approval, and the Civil Contingencies Agency may direct fuel, generators and medical
+    supplies across counties. Without a declaration, neither may do so.
+- id: military-support-to-civil
+  text: >-
+    Without heightened alert, Defence Command may support civil authorities on Vardland
+    territory with transport, engineering, surveillance and protection of military sites,
+    but only at a civil authority's request. It may not order a civil evacuation, restrict
+    civilian movement or use force against civilians under any alert level. Those powers
+    belong to civil authorities.
+- id: county-emergency-direction
+  text: >-
+    Skarö County Administration directs the civil emergency response on Skarö: shelters,
+    evacuation, and priorities for power, fuel and water between essential services. It keeps
+    that direction until the Cabinet transfers it to national level. The Civil Contingencies
+    Agency coordinates and supplies, but does not command, the county response.
+- id: host-nation-consent
+  text: >-
+    Foreign military forces may operate on Vardland territory, in its territorial waters or
+    in its airspace only with a Cabinet decision. Aldmoor cannot deploy forces there by its
+    own decision, whatever its treaty obligations or its assessment of the threat. Consent
+    may be limited in scope, place and time.
+- id: alliance-consultation
+  text: >-
+    An armed attack on Vardland obliges Aldmoor to consult with Vardland on assistance. It
+    does not oblige Aldmoor to deploy forces. Incidents below the threshold of armed attack,
+    such as sabotage that cannot be attributed, cyber disruption or disinformation, trigger
+    no treaty obligation. They may still justify voluntary assistance.
+- id: official-attribution
+  text: >-
+    Only the Vardland Cabinet can officially attribute a hostile act to a state. Other
+    Vardland actors may share evidence with the Cabinet or with Aldmoor, but cannot make an
+    official attribution. An attribution without supporting evidence in an active fact is a
+    political claim, not an established fact.
+- id: cable-repair-time
+  text: >-
+    Repairing the Skarö subsea cable needs a cable-repair vessel on site and safe access to
+    the fault. Repair cannot be completed in the turn in which safe access is first secured.
+    At the earliest, it completes in the following turn. Until then, Skarö depends on backup
+    generation and fuel deliveries by sea or air.
+- id: qualitative-posture
+  text: >-
+    Military strength and readiness are qualitative in this scenario. No Argument succeeds or
+    fails on unit counts, weapon ranges or attrition. Posture is judged from established facts
+    and public Resources, and a claim of superiority is not evidence.
+actors:
+  drevna:
+    name: Drevnian Federation
+    public_description: >-
+      A large neighbouring state across the Eastern Sea. Drevna is conducting a long-announced
+      naval and air exercise close to Skarö. It denies any involvement in the cable failure and
+      accuses Vardland of provocative militarisation of the island.
+    private_brief: >-
+      You lead Drevna's policy toward Vardland. Your aim is to weaken Vardland's confidence
+      that it can hold Skarö without outside help, and to make Aldmoor's support look costly,
+      divisive or illegitimate, without giving anyone clear grounds to call your actions an
+      armed attack.
+
+      You have tools below that threshold: the exercise, maritime presence, information
+      operations, commercial and energy leverage, diplomatic offers and deniable activity.
+      Your leadership does not want war with Aldmoor. An open attack on Vardland territory
+      would unite your opponents and could draw Aldmoor in.
+
+      You cannot order Vardland or Aldmoor to do anything. Whether other states believe your
+      denials depends on the evidence, not on what you say. Weigh short-term pressure against
+      the risk that a clear attribution hardens Vardland and Aldmoor for years.
+    objectives:
+    - Keep Aldmoor forces off Skarö, or make any deployment politically costly.
+    - Avoid an official, evidence-backed attribution of the cable failure to Drevna.
+    - Show that Vardland's government is slow and divided in a crisis.
+    - Avoid any incident Aldmoor could treat as an armed attack on Vardland.
+    private_information:
+    - A Drevnian-contracted survey vessel was in the area of the cable fault shortly before the failure. Its crew has since left the region.
+    - Drevna has prepared a public offer to send its own civilian cable-repair vessel as a gesture of good neighbourliness.
+    - Several online accounts spreading claims that the Vardland government caused the outage are directed by a Drevnian state media office.
+  vardland_cabinet:
+    name: Vardland Cabinet
+    public_description: >-
+      The Kingdom of Vardland's government, led by the Prime Minister. It is responsible for
+      national crisis decisions, including alert levels, foreign military presence and official
+      attribution.
+    private_brief: >-
+      You are the Prime Minister's crisis cabinet. You must keep Skarö's population safe and
+      supplied, keep the state's authority credible on the island, and keep the crisis below
+      war. Every decision you take also carries a political cost at home and abroad.
+
+      Declaring heightened alert strengthens Defence Command and the Civil Contingencies
+      Agency, but Drevna and part of the domestic public will call it escalation. Inviting
+      Aldmoor forces brings capability and deterrence, but also dependence and a Drevnian
+      propaganda gift. Attributing the cable failure to Drevna without evidence could be
+      reckless. Failing to attribute when evidence exists could look weak.
+
+      You can decide for the state, but you cannot order the county's detailed emergency
+      response while it keeps direction. You cannot order Aldmoor or Drevna to do anything.
+    objectives:
+    - Restore reliable power and communications to Skarö.
+    - Keep national authority over the response visibly credible and lawful.
+    - Deter further Drevnian pressure without an armed clash.
+    - Keep alliance support on terms Vardland controls.
+    private_information:
+    - The coalition's junior partner will leave the government if heightened alert is declared without a clear public justification.
+    - The Cabinet has not yet decided whether to allow Aldmoor surveillance aircraft into Vardland airspace.
+    - Treasury warns that emergency fuel shipments to Skarö for more than two weeks will require an extraordinary budget decision.
+  defence_command:
+    name: Vardland Defence Command
+    public_description: >-
+      The command of Vardland's armed forces. It maintains a small permanent garrison on Skarö
+      and is responsible for the military defence of Vardland territory.
+    private_brief: >-
+      You command Vardland's armed forces. Your concern is that the cable failure and the
+      exercise may be preparation for something larger. The Skarö garrison is small, and
+      reinforcing it takes time and a Cabinet decision on alert.
+
+      You want freedom to reinforce and to protect critical infrastructure. You also know that
+      the law limits what soldiers may do on home territory in peacetime. Over-reaching would
+      damage the armed forces' standing and hand Drevna a story. You can support the county and
+      the Civil Contingencies Agency when they ask, but you cannot command them.
+
+      Military judgement here is qualitative. Assessments are evidence with confidence levels,
+      not certainty.
+    objectives:
+    - Obtain the authority and time to reinforce Skarö before any escalation.
+    - Protect the cable landing site, port and airfield on Skarö.
+    - Establish what caused the cable failure.
+    - Keep the armed forces within their lawful role.
+    private_information:
+    - Naval surveillance recorded the Drevnian-contracted survey vessel near the cable route before the failure. The recording shows position only, not activity.
+    - Defence Command has quietly placed the Skarö garrison on internal readiness. This has not been announced.
+    - Reinforcement by sea needs about two days after a decision. The first units by air need about one day.
+  civil_contingencies:
+    name: Vardland Civil Contingencies Agency
+    public_description: >-
+      The national agency that coordinates society's preparedness for crises and war. It
+      supports regional authorities with supplies, expertise and public information, but does
+      not command them.
+    private_brief: >-
+      You coordinate the national civil response. Skarö's backup generation depends on fuel
+      that must arrive by sea or air, and public trust depends on accurate, timely information
+      while rumours spread online. You hold national stockpiles and relationships with
+      infrastructure operators, but you do not command the county.
+
+      Your worry is that the crisis response becomes military-led and civil needs such as
+      heating, water, healthcare and information become secondary. You also need the Cabinet to
+      give you cross-county authority if the situation lasts.
+    objectives:
+    - Keep essential services on Skarö running until the cable is repaired.
+    - Counter disinformation with credible, coordinated public information.
+    - Obtain clear national authority to direct supplies across counties if needed.
+    - Keep civil protection and military activity coordinated but distinct.
+    private_information:
+    - The national generator stockpile can replace about half of Skarö's backup generation if the primary units fail.
+    - The only cable-repair vessel under Vardland contract is in dry dock and needs several days before it can sail.
+    - The agency has traced part of the online rumour campaign to accounts outside Vardland, with moderate confidence.
+  skaro_county:
+    name: Skarö County Administration
+    public_description: >-
+      The regional state authority for the island county of Skarö. It directs the civil
+      emergency response on the island and works closely with the island's municipality and
+      the local grid operator.
+    private_brief: >-
+      You are responsible for the people of Skarö now. Backup generation keeps hospitals,
+      water and heating running, but reserves are finite. The island's residents want
+      reassurance, not a militarised island.
+
+      You direct the civil response on Skarö and want to keep that authority until the Cabinet
+      decides otherwise. You need fuel, generators and specialists from the mainland. You can
+      ask Defence Command for support, but you worry about soldiers becoming the face of the
+      response.
+    objectives:
+    - Keep hospitals, water, heating and communications working on Skarö.
+    - Retain county direction of the civil response unless national direction clearly helps.
+    - Keep the public on Skarö informed and calm.
+    - Secure the cable landing site and port for repair and supply.
+    private_information:
+    - At current consumption, backup generation fuel on Skarö lasts about five days without resupply.
+    - The grid operator believes the cable was damaged by an anchor or a similar object dragged along the seabed, not by wear.
+    - Some island residents have begun leaving by ferry, and ferry capacity is limited.
+  aldmoor:
+    name: Kingdom of Aldmoor
+    public_description: >-
+      Vardland's principal allied partner, bound to it by a mutual-defence treaty. Aldmoor has
+      offered surveillance, naval presence and technical help, and says it will respect
+      Vardland's decisions on its own territory.
+    private_brief: >-
+      You want the alliance to look credible and Drevna deterred. Your forces are capable and
+      nearby, but you cannot operate on Vardland territory, waters or airspace without
+      Vardland's consent. You do not want to be seen as overriding a partner.
+
+      Your domestic politics limits appetite for a standing deployment. You also have a
+      commercial interest: an Aldmoor company operates cable-repair vessels in the region.
+      Evidence you share can shape Vardland's decisions, but sharing it may expose how you
+      collect intelligence.
+    objectives:
+    - Demonstrate alliance credibility to Vardland and to Drevna.
+    - Obtain Vardland consent for a limited, clearly defined Aldmoor role.
+    - Avoid being drawn into a standing deployment without a clear end point.
+    - Keep your intelligence sources and methods protected.
+    private_information:
+    - Aldmoor signals intelligence links the survey vessel's charter to a company controlled by a Drevnian state agency. Sharing this would reveal a collection capability.
+    - An Aldmoor-operated cable-repair vessel could reach Skarö within two days of a request.
+    - Aldmoor's government will not approve more than a limited surveillance and naval-escort role without a formal Vardland request.
+starting_effects:
+- description: Skarö's only subsea power and data cable to the mainland has failed. The cause has not been established.
+  visibility: public
+- description: Skarö is running on backup generation. Hospitals, water and heating are prioritised, and fuel must arrive by sea or air.
+  visibility: public
+- description: A large Drevnian naval and air exercise is under way in international waters near Skarö.
+  visibility: public
+- description: Vardland has not declared heightened alert. The Skarö garrison is at its normal peacetime level.
+  visibility: public
+- description: No foreign military forces operate on Vardland territory, in its territorial waters or in its airspace.
+  visibility: public
+- description: Skarö County Administration directs the civil emergency response on the island.
+  visibility: public
+- description: Online claims that the Vardland government caused the outage through neglect are spreading quickly.
+  visibility: public
+- description: The Skarö garrison is at internal readiness by order of Defence Command. This is not public.
+  visibility: private
+  visible_to:
+  - defence_command
+injects:
+- id: port-systems-intrusion
+  turn: 3
+  visibility: public
+  description: >-
+    The control and fuel-dispensing systems at Skarö harbour go offline after a cyber intrusion
+    of unknown origin. Fuel and cargo can still be handled manually, but at about a third of
+    normal speed until the systems are restored. The harbour operator asks for national help.
+- id: drevna-exercise-extension
+  turn: 3
+  visibility: private
+  visible_to:
+  - drevna
+  description: >-
+    Drevna's leadership extends the exercise by one week. It wants a visible result before the
+    exercise ends: a public Vardland concession, a public dispute between Vardland and Aldmoor,
+    or evidence that Vardland's authorities contradict each other. A quiet end counts as failure.
+- id: aldmoor-parliament-deadline
+  turn: 3
+  visibility: private
+  visible_to:
+  - aldmoor
+  description: >-
+    Aldmoor's parliament will debate the Skarö crisis within days. Your government must state
+    what role Aldmoor will play and for how long. Without a formal written Vardland request that
+    defines that role, it will announce that Aldmoor forces stay outside Vardland's territory,
+    waters and airspace.
+- id: storm-closes-links
+  turn: 4
+  visibility: public
+  description: >-
+    The national weather service warns of a severe winter storm. Sea and air links to Skarö are
+    expected to close for up to four days from the end of this turn. Anything the island needs
+    during the storm must arrive before then.
+- id: vessel-anchored-near-landing
+  turn: 4
+  visibility: public
+  description: >-
+    A Drevnian-flagged fishing vessel reports engine failure and drops anchor inside Vardland's
+    territorial waters, about two nautical miles from the Skarö cable landing site. Its master
+    asks for a tow and refuses a boarding inspection. Drevna says the vessel is in distress.
+resources:
+- id: eastern-sea-map
+  name: Eastern Sea situation map
+  type: map
+  path: resources/eastern-sea-map.geojson
+  visibility: public
+  tags:
+  - map
+  - geography
+  - skaro
+  - cable
+  - exercise
+  metadata:
+    description: Schematic fictional geography. Positions are representational, not to scale, and carry no movement or range rules.
+    format_note: GeoJSON attachment. Authoritative locations and control are carried by Effects, not by this map.
+- id: public-situation
+  name: Public situation report
+  type: background
+  path: resources/public-situation.md
+  visibility: public
+  tags:
+  - chronology
+  - cable
+  - exercise
+  - public
+  metadata:
+    date_basis: fictional
+- id: total-defence-framework
+  name: Vardland total-defence framework
+  type: legal
+  path: resources/total-defence-framework.md
+  visibility: public
+  tags:
+  - law
+  - authority
+  - alert
+  - host-nation
+  - total-defence
+  metadata:
+    status: Fictional scenario law. The binding points are restated as scenario rules.
+- id: skaro-profile
+  name: Skarö county profile
+  type: background
+  path: resources/skaro-profile.md
+  visibility: public
+  tags:
+  - skaro
+  - population
+  - infrastructure
+  - geography
+- id: information-environment
+  name: Information environment monitor
+  type: press_archive
+  path: resources/information-environment.md
+  visibility: public
+  tags:
+  - media
+  - disinformation
+  - public-opinion
+- id: drevna-campaign-concept
+  name: Drevnian campaign concept
+  type: planning
+  path: resources/drevna-campaign-concept.md
+  visibility: private
+  visible_to:
+  - drevna
+  tags:
+  - strategy
+  - information
+  - escalation
+  metadata:
+    owner: drevna
+- id: cabinet-political-assessment
+  name: Cabinet political assessment
+  type: briefing
+  path: resources/cabinet-political-assessment.md
+  visibility: private
+  visible_to:
+  - vardland_cabinet
+  tags:
+  - politics
+  - coalition
+  - alert
+  - alliance
+  metadata:
+    owner: vardland_cabinet
+- id: defence-assessment
+  name: Defence Command situation assessment
+  type: intelligence
+  path: resources/defence-assessment.md
+  visibility: private
+  visible_to:
+  - defence_command
+  tags:
+  - military
+  - readiness
+  - survey-vessel
+  - reinforcement
+  metadata:
+    owner: defence_command
+    confidence: mixed
+- id: national-supply-status
+  name: National supply and repair status
+  type: dataset
+  path: resources/national-supply-status.csv
+  visibility: private
+  visible_to:
+  - civil_contingencies
+  - skaro_county
+  tags:
+  - supply
+  - fuel
+  - generators
+  - repair
+  metadata:
+    owner: civil_contingencies
+    shared_with: skaro_county
+- id: skaro-grid-report
+  name: Skarö grid operator report
+  type: technical_reference
+  path: resources/skaro-grid-report.md
+  visibility: private
+  visible_to:
+  - skaro_county
+  tags:
+  - grid
+  - cable
+  - fault
+  - backup-generation
+  metadata:
+    owner: skaro_county
+- id: aldmoor-intelligence-note
+  name: Aldmoor intelligence note
+  type: intelligence
+  path: resources/aldmoor-intelligence-note.md
+  visibility: private
+  visible_to:
+  - aldmoor
+  tags:
+  - intelligence
+  - survey-vessel
+  - attribution
+  - sources
+  metadata:
+    owner: aldmoor
+    confidence: moderate-high

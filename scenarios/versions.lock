@@ -1,0 +1,41 @@
+# Every released scenario version and the hashes a run manifest seals for it (D-104).
+# Append-only history. After bumping `scenario.version`, run:
+#   uv run python scripts/lock_scenarios.py
+# A package whose content no longer matches its declared version fails TEST-I143-001.
+
+northern-strait:
+  directory: northern-strait
+  versions:
+    '1':
+      scenario_sha256: 5374227996e7eca25bde6fb3fa69824c04b886ce7b2709ac57dd8ca0454f85e2
+      resources_sha256: cb6fd6b9a30e2414130f02f306c53506e5762c21620fbf808b1e8cc92a723059
+orison-crisis:
+  directory: orison-crisis
+  versions:
+    1.2.0:
+      scenario_sha256: b9232826da60645eb76c64faab8f928b8fa93f1c8bed1d1ce465eaa448e79932
+      resources_sha256: 4ed1411fc8104a3f503bc32da150eb6762b364176a6d4a8c2b0c2eba3dcb14ac
+skaro-crisis:
+  directory: skaro-crisis
+  versions:
+    1.0.0:
+      scenario_sha256: 7988147d408cd69e35b192ed2311f1b8a78a05cd3e0202ff9bac62c6199f1119
+      resources_sha256: 7ba0e444c2593b9badf4b02e3d71b9fdd0eb78c3ca4c4a1f50c5925b8db3d650
+    1.1.0:
+      scenario_sha256: 83600019f057c3f987f3dea62459f88b12d8d8b16dc40e2819806af2557366ae
+      resources_sha256: 7ba0e444c2593b9badf4b02e3d71b9fdd0eb78c3ca4c4a1f50c5925b8db3d650
+    1.2.0:
+      scenario_sha256: afa6ece590a700a51083d10a09d0ddc9d25ce9aaaffa3fb1b687016f779509e6
+      resources_sha256: 7ba0e444c2593b9badf4b02e3d71b9fdd0eb78c3ca4c4a1f50c5925b8db3d650
+svensk-regeringsbildning-2026:
+  directory: swedish-government
+  versions:
+    '6':
+      scenario_sha256: 1311b2dc442bc0d535b45aadf83ea0623b439d52653bafa636ccbd2f1da93131
+      resources_sha256: a48ca1db564b9b291ab0313562039b8789f2cfa1a23015a43573ca54f01a3021
+    7.0.0:
+      scenario_sha256: 5e1f85d2c791c59b1879e42184a46ba42de1a480a1317b0a87f708a58e794525
+      resources_sha256: dffd8a2fba72f55284be5debf3193a450bd27d64280a8e9cce0fbc3ce118f6c0
+    7.1.0:
+      scenario_sha256: c3bff914614d052bf1365f3371430601fb02cc067a74ae7e12ac83c56e726fa8
+      resources_sha256: 8c3a191953073e58e39f32a3a6e026697ac5e97d23f4c4090cdd0474b93df551
