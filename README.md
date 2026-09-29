@@ -1,4 +1,4 @@
-# AMAW — Autonomous Matrix Wargame Platform
+# AMAW — AI Matrix Wargames
 
 <!-- SPDX-License-Identifier: MIT -->
 
