@@ -19,7 +19,7 @@ from datetime import UTC, datetime
 import json
 import logging
 import secrets
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Annotated, Any, cast
 import uuid
 from pathlib import Path
@@ -37,6 +37,7 @@ from amaw_contracts import (
 )
 
 if TYPE_CHECKING:  # typing only: the agent stack is imported lazily inside the commands
+    from aar.model import AfterActionReport
     from agents.inference_profile import InferenceProfile
     from agents.player import PlayerConfig
     from app.config import Settings
@@ -97,6 +98,10 @@ def report(
     out: Path | None = typer.Option(
         None, "--out", help="Output directory. Default: <export dir>/<game id>-aar/."
     ),
+    card: bool = typer.Option(
+        False, "--card", help="Also write the share card: card.html, card.png and card.mp4."
+    ),
+    no_video: bool = typer.Option(False, "--no-video", help="With --card, skip card.mp4."),
 ) -> None:
     """Write an after-action report (report.md) for a game, from its export alone (TRD §34).
 
@@ -122,9 +127,35 @@ def report(
 
     target = out or path.parent / f"{record['game']['id']}-aar"
     target.mkdir(parents=True, exist_ok=True)
+    after_action = build_report(record)
     report_path = target / "report.md"
-    report_path.write_text(render_markdown(build_report(record)), encoding="utf-8")
+    report_path.write_text(render_markdown(after_action), encoding="utf-8")
     typer.echo(f"wrote {report_path} (includes private material)")
+    if card:
+        _write_card(after_action, target, video=not no_video)
+
+
+def _write_card(after_action: AfterActionReport, target: Path, *, video: bool) -> None:
+    """The share card page, then its PNG and MP4 captures (#18); exits 2 without the share extra."""
+    import aar.capture
+    from aar.card import render_card_html
+
+    html_path = target / "card.html"
+    html_path.write_text(render_card_html(after_action), encoding="utf-8")
+    typer.echo(f"wrote {html_path}")
+    outputs: list[tuple[Callable[[Path, Path], None], Path]] = [
+        (aar.capture.capture_png, target / "card.png")
+    ]
+    if video:
+        outputs.append((aar.capture.capture_mp4, target / "card.mp4"))
+    for capture, path in outputs:
+        try:
+            capture(html_path, path)
+        except aar.capture.CaptureUnavailable as exc:
+            typer.echo(f"error: {exc}", err=True)
+            raise typer.Exit(code=2) from None
+        typer.echo(f"wrote {path}")
+    typer.echo("note: the card may contain private diplomacy from the administrative export")
 
 
 @contextmanager
