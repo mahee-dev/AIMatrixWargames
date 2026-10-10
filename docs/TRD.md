@@ -2,8 +2,8 @@
 
 ## Technical Requirements Document
 
-**Version:** 0.6.0 — Lean MVP + Scale Extension Contracts. Change history: `dev/DECISIONS.md`
-(latest D-102: the sections that restated specialist contracts now point to them).
+**Version:** 0.7.0 — Lean MVP + Scale Extension Contracts. Change history: `dev/DECISIONS.md`
+(latest D-122: §41.1 admits a read-only observer view, with an opt-in hosted publisher).
 **Status:** Governs architecture and scope where no specialist contract applies
 (`README.md` in this directory). The original v0.5.1 is archived in
 `dev/archive/docs/original-vision/`.  
@@ -1912,6 +1912,40 @@ automated behavioural personality scoring
 ```
 
 These may be added only after the benchmark demonstrates that the underlying games produce useful or interesting behaviour.
+
+## 41.1 Amendment: the observer view (D-122)
+
+An outside observer may follow a game live and replay it afterwards. This is a read-only,
+omniscient view for the operator and the people the operator shares it with. It is not a
+player or facilitator UI: it never carries input back into a game.
+
+The observer view consists of:
+
+```text
+observer feed    read-only module outside app/ that joins the event log to the rows it
+                 references; its item shapes are the admin export's
+terminal viewer  amaw watch <game_id>, and amaw run --watch; local only
+publisher        amaw publish <game_id>, and amaw run --publish; pushes the feed over HTTPS
+                 to a relay the operator hosts, which serves an external frontend
+```
+
+Rules:
+
+- The feed is administrative. It contains what the admin export contains, with ownership
+  metadata, and is never served through Actor-facing APIs or the visibility service's Actor paths.
+- It reads the game database through read-only connections. Neither consumer can change game
+  state, and stopping or crashing either never affects a run or its export.
+- Publishing is opt-in for each run. The relay's ingest credential stays on the machine that runs
+  the game and is never committed. The machine opens no inbound ports. Viewers of the relay have
+  read access only.
+- Whether a scenario may be published is the operator's decision. A scenario package's rights
+  note applies to published games exactly as it does to shared exports.
+- The relay and the external frontend are outside this repository and outside the engine. The
+  publisher's ingest format, which carries the feed's item shapes, is the contract between them.
+  The relay's PostgreSQL storage and SSE stream do not bring PostgreSQL or SSE into the core
+  above.
+
+The local browser workbench (D-106) is a separate amendment.
 
 ---
 

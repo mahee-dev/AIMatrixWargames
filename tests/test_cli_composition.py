@@ -24,6 +24,8 @@ _NON_CONDITION_PARAMETERS = {
     "log_level",
     "log_file",
     "stream_game_details",
+    "watch",  # #24: the terminal viewer is presentation; it never changes the condition
+    "publish",  # #25: publishing to the relay is presentation too
     "export_path",
     "analysis_plan",
     "run_class",
