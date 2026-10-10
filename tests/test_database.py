@@ -9,6 +9,7 @@ honours an explicit path (creating its parent) while the default engine follows
 
 from __future__ import annotations
 
+import sqlite3
 from pathlib import Path
 
 from sqlalchemy import Engine, inspect, text
@@ -167,6 +168,50 @@ def test_engine_for_path_honours_explicit_path_and_creates_parent(tmp_path: Path
     assert nested.parent.is_dir()
     assert nested.is_file()  # the DB was written where asked, not the default location
     engine.dispose()
+
+
+def test_engine_for_path_puts_the_database_in_wal_mode(tmp_path: Path) -> None:
+    """Every app engine opens the file in WAL journal mode (#12)."""
+    path = tmp_path / "wal.db"
+    engine = database.engine_for_path(path)
+    try:
+        with engine.connect() as connection:
+            mode = connection.exec_driver_sql("PRAGMA journal_mode").scalar()
+        assert mode == "wal"
+    finally:
+        engine.dispose()
+    # WAL is a property of the file, so a plain connection opened later sees it too.
+    with sqlite3.connect(path) as raw:
+        assert raw.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
+
+
+def test_an_open_reader_does_not_block_a_writer(tmp_path: Path) -> None:
+    """A second process reading the database never stalls the game's commits (#12, #23).
+
+    Under the default rollback journal, a reader holding a read transaction keeps the writer
+    from committing until the busy timeout expires; under WAL the writer commits at once and
+    the reader keeps its snapshot.
+    """
+    path = tmp_path / "shared.db"
+    engine = database.engine_for_path(path)
+    database.create_db_and_tables(engine)
+    engine.dispose()
+
+    reader = sqlite3.connect(path, isolation_level=None)
+    writer = sqlite3.connect(path, timeout=0.5, isolation_level=None)
+    try:
+        reader.execute("BEGIN")
+        before = reader.execute("SELECT count(*) FROM game").fetchone()[0]
+
+        writer.execute("BEGIN IMMEDIATE")
+        writer.execute("CREATE TABLE observer_probe (x INTEGER)")
+        writer.execute("COMMIT")  # raises "database is locked" under the rollback journal
+
+        assert reader.execute("SELECT count(*) FROM game").fetchone()[0] == before
+        reader.execute("COMMIT")
+    finally:
+        reader.close()
+        writer.close()
 
 
 def test_default_engine_uses_settings_path(tmp_path: Path, monkeypatch) -> None:
