@@ -55,9 +55,11 @@ def _main() -> None:
     """
 
 
-@app.command()
-def export(game_id: str) -> None:
-    """Print the complete administrative JSON export of GAME_ID to stdout (api.md §15.1)."""
+def _build_export(game_id: str) -> dict:
+    """The administrative export of GAME_ID from the configured database (api.md §15.1).
+
+    Exits 2 for a malformed id and 1 for an unknown game.
+    """
     # Imported lazily so `import amaw_cli` is cheap and stays framework-free.
     from app.config import Settings
     from app.database import engine_for_path
@@ -72,15 +74,57 @@ def export(game_id: str) -> None:
 
     engine = engine_for_path(Settings().database_path)
     try:
-        record = build_game_export(engine, parsed)
+        return build_game_export(engine, parsed)
     except GameNotFound:
         typer.echo(f"error: no game {game_id}", err=True)
         raise typer.Exit(code=1) from None
     finally:
         engine.dispose()
 
+
+@app.command()
+def export(game_id: str) -> None:
+    """Print the complete administrative JSON export of GAME_ID to stdout (api.md §15.1)."""
+    record = _build_export(game_id)
+
     # sort_keys keeps the printed record stable regardless of dict insertion order.
     typer.echo(json.dumps(record, indent=2, sort_keys=True))
+
+
+@app.command()
+def report(
+    source: str = typer.Argument(..., help="A game id, or the path of an export JSON file."),
+    out: Path | None = typer.Option(
+        None, "--out", help="Output directory. Default: <export dir>/<game id>-aar/."
+    ),
+) -> None:
+    """Write an after-action report (report.md) for a game, from its export alone (TRD §34).
+
+    A game id is exported from the configured database first, beside it in ``exports/``, so the
+    report can always be rebuilt from the file it was made from.
+    """
+    from aar.markdown import render_markdown
+    from aar.model import build_report
+    from app.config import Settings
+    from app.export import write_json_atomic
+
+    path = Path(source)
+    if path.suffix == ".json" or path.exists():
+        if not path.is_file():
+            typer.echo(f"error: no export file at {path}", err=True)
+            raise typer.Exit(code=2)
+        record = json.loads(path.read_text(encoding="utf-8"))
+    else:
+        record = _build_export(source)
+        path = _default_export_path(Settings(), str(record["game"]["id"]))
+        write_json_atomic(path, record)
+        typer.echo(f"wrote {path}")
+
+    target = out or path.parent / f"{record['game']['id']}-aar"
+    target.mkdir(parents=True, exist_ok=True)
+    report_path = target / "report.md"
+    report_path.write_text(render_markdown(build_report(record)), encoding="utf-8")
+    typer.echo(f"wrote {report_path} (includes private material)")
 
 
 @contextmanager
