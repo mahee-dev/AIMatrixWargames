@@ -33,6 +33,7 @@ this table against them.
 | `umpire-v1.4.md` | Umpire, reply-aware (`visible_reply`) | **current** (selectable) | D-060 (I-046) |
 | `umpire-v1.3.md` | Umpire, released (sealed Cons) | **current** (selectable; legacy recipes resolve to it) | D-044 / D-047 (I-036) |
 | `consequence-v1.1.md` | Consequence resolver, `bounded_effects_v1` only (T-074); `agents/consequence.py` (`CONSEQUENCE_PROMPT_VERSIONS`) | **current** | D-091 (T-074) |
+| `aar-narrator-v1.0.md` | After-action narrator: writes the story cards from an export, citing it (#18); `aar/narrator.py` (`NARRATOR_PROMPT_VERSIONS`) | **current** | D-121 (#18) |
 | `evaluator-v1.1.md` | Post-game objective evaluator | not wired — T-061 is optional and unscheduled | initial pack |
 
 ## Superseded, kept for reproducibility in `superseded/`
