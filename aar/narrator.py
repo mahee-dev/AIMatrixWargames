@@ -133,6 +133,23 @@ def narrate(
     return outcome
 
 
+def load_narration(path: Path, export: dict[str, Any]) -> Narration | None:
+    """The saved narration for exactly this export, validated again; ``None`` when there is none."""
+    if not path.is_file():
+        return None
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    if saved.get("export_sha256") != export_sha256(export) or not saved.get("story"):
+        return None
+    try:
+        story = Story.model_validate(saved["story"] | {"narrated": True})
+    except ValidationError as exc:
+        return Narration(story=None, errors=[str(exc)], cached=True)
+    errors = validate_story(story, export)
+    return Narration(story=None if errors else story, errors=errors, cached=True,
+                     model_requested=saved.get("model_requested"),
+                     model_returned=saved.get("model_returned"))
+
+
 def load_or_narrate(
     path: Path,
     report: AfterActionReport,
@@ -145,17 +162,9 @@ def load_or_narrate(
     """Reuse ``path`` while it matches this export; otherwise narrate and save. A cached story is
     validated again, so a hand-edited ``narration.json`` is held to the same rules."""
     digest = export_sha256(export)
-    if path.is_file() and not renarrate:
-        saved = json.loads(path.read_text(encoding="utf-8"))
-        if saved.get("export_sha256") == digest and saved.get("story"):
-            try:
-                story = Story.model_validate(saved["story"] | {"narrated": True})
-            except ValidationError as exc:
-                return Narration(story=None, errors=[str(exc)], cached=True)
-            errors = validate_story(story, export)
-            return Narration(story=None if errors else story, errors=errors, cached=True,
-                             model_requested=saved.get("model_requested"),
-                             model_returned=saved.get("model_returned"))
+    cached = None if renarrate else load_narration(path, export)
+    if cached is not None:
+        return cached
     outcome = narrate(report, export, client_factory(), model=model)
     if outcome.story is not None:
         path.write_text(json.dumps({

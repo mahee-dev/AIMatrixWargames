@@ -38,6 +38,7 @@ from amaw_contracts import (
 
 if TYPE_CHECKING:  # typing only: the agent stack is imported lazily inside the commands
     from aar.model import AfterActionReport
+    from aar.story import Story
     from agents.inference_profile import InferenceProfile
     from agents.player import PlayerConfig
     from app.config import Settings
@@ -99,9 +100,18 @@ def report(
         None, "--out", help="Output directory. Default: <export dir>/<game id>-aar/."
     ),
     card: bool = typer.Option(
-        False, "--card", help="Also write the share card: card.html, card.png and card.mp4."
+        False, "--card", help="Also write the story cards: card-1.png … card-5.png and card.mp4."
     ),
     no_video: bool = typer.Option(False, "--no-video", help="With --card, skip card.mp4."),
+    narrate: bool = typer.Option(
+        False, "--narrate", help="Have a model write the story (needs OPENROUTER_API_KEY)."
+    ),
+    narrate_model: str | None = typer.Option(
+        None, "--narrate-model", help="Model for --narrate. Default: the configured Umpire model."
+    ),
+    renarrate: bool = typer.Option(
+        False, "--renarrate", help="With --narrate, ignore a saved narration.json."
+    ),
 ) -> None:
     """Write an after-action report (report.md) for a game, from its export alone (TRD §34).
 
@@ -132,30 +142,81 @@ def report(
     report_path.write_text(render_markdown(after_action), encoding="utf-8")
     typer.echo(f"wrote {report_path} (includes private material)")
     if card:
-        _write_card(after_action, target, video=not no_video)
+        story = _story_for_cards(after_action, record, target, narrate=narrate,
+                                 model=narrate_model, renarrate=renarrate)
+        _write_cards(story, record, after_action, target, video=not no_video)
+    elif narrate:
+        typer.echo("error: --narrate writes the story for the cards; add --card", err=True)
+        raise typer.Exit(code=2)
 
 
-def _write_card(after_action: AfterActionReport, target: Path, *, video: bool) -> None:
-    """The share card page, then its PNG and MP4 captures (#18); exits 2 without the share extra."""
+def _story_for_cards(
+    after_action: AfterActionReport, record: dict, target: Path, *,
+    narrate: bool, model: str | None, renarrate: bool,
+) -> Story:
+    """The narrated story when there is a valid one, else the record-built story (#18).
+
+    A saved ``narration.json`` for this exact export is reused without ``--narrate``, so its
+    wording can be edited by hand and re-rendered; it is validated again either way."""
+    from aar.narrator import Narration, load_narration, load_or_narrate, narrator_input
+    from aar.story import fallback_story
+
+    path = target / "narration.json"
+    outcome: Narration | None
+    if narrate:
+        from agents.model_client import OpenRouterClient
+        from app.config import Settings
+
+        settings = Settings()
+        if settings.openrouter_api_key is None:
+            typer.echo("error: --narrate needs OPENROUTER_API_KEY in the environment or .env", err=True)
+            raise typer.Exit(code=2)
+        chosen = model or settings.umpire_model
+        size = len(json.dumps(narrator_input(after_action, record)))
+        typer.echo(f"narrating with {chosen} (input {size:,} characters, about {size // 4:,} tokens)")
+        outcome = load_or_narrate(path, after_action, record,
+                                  lambda: OpenRouterClient.from_settings(settings),
+                                  model=chosen, renarrate=renarrate)
+        cost = sum(float(u.get("cost") or 0) for u in outcome.usage)
+        if outcome.usage:
+            typer.echo(f"narration cost ${cost:.4f} over {len(outcome.usage)} call(s)")
+    else:
+        outcome = load_narration(path, record)
+    if outcome is not None and outcome.story is not None:
+        if outcome.cached:
+            typer.echo(f"using the saved story in {path}")
+        return outcome.story
+    if outcome is not None and outcome.errors:
+        typer.echo("warning: the narrated story was rejected; using the record-built story:", err=True)
+        for problem in outcome.errors:
+            typer.echo(f"  - {problem}", err=True)
+    return fallback_story(after_action, record)
+
+
+def _write_cards(
+    story: Story, record: dict, after_action: AfterActionReport, target: Path, *, video: bool
+) -> None:
+    """The story cards as pages, PNGs and one MP4 (#18); exits 2 without the share extra."""
     import aar.capture
-    from aar.card import render_card_html
+    from aar.card import render_screens
+    from aar.facts import run_facts
 
-    html_path = target / "card.html"
-    html_path.write_text(render_card_html(after_action), encoding="utf-8")
-    typer.echo(f"wrote {html_path}")
-    outputs: list[tuple[Callable[[Path, Path], None], Path]] = [
-        (aar.capture.capture_png, target / "card.png")
-    ]
-    if video:
-        outputs.append((aar.capture.capture_mp4, target / "card.mp4"))
-    for capture, path in outputs:
-        try:
-            capture(html_path, path)
-        except aar.capture.CaptureUnavailable as exc:
-            typer.echo(f"error: {exc}", err=True)
-            raise typer.Exit(code=2) from None
-        typer.echo(f"wrote {path}")
-    typer.echo("note: the card may contain private diplomacy from the administrative export")
+    pages = []
+    for n, (_, html) in enumerate(render_screens(story, run_facts(record), after_action), 1):
+        page = target / f"card-{n}.html"
+        page.write_text(html, encoding="utf-8")
+        pages.append(page)
+    try:
+        for page in pages:
+            aar.capture.capture_png(page, page.with_suffix(".png"))
+        typer.echo(f"wrote {len(pages)} cards: {pages[0].with_suffix('.png')} …")
+        if video:
+            aar.capture.capture_mp4(pages, target / "card.mp4")
+            typer.echo(f"wrote {target / 'card.mp4'}")
+    except aar.capture.CaptureUnavailable as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from None
+    typer.echo("note: the cards may contain private diplomacy from the administrative export")
 
 
 @contextmanager

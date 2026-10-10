@@ -121,3 +121,15 @@ def test_renarrate_forces_a_new_call(tmp_path: Path) -> None:
     load_or_narrate(path, build_report(export), export, lambda: client, model="m/narrator")
     load_or_narrate(path, build_report(export), export, lambda: client, model="m/narrator", renarrate=True)
     assert len(client.calls) == 2
+
+
+@pytest.mark.llm
+def test_the_default_model_narrates_the_canonical_game(canonical_export: dict) -> None:
+    """Layer 4: a real narration of the canonical game must pass validation (needs a key)."""
+    from agents.model_client import OpenRouterClient
+    from app.config import Settings
+
+    settings = Settings()
+    with OpenRouterClient.from_settings(settings) as client:
+        outcome = narrate(build_report(canonical_export), canonical_export, client, model=settings.umpire_model)
+    assert outcome.story is not None, outcome.errors
