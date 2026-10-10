@@ -110,7 +110,9 @@ uv run amaw export GAME_ID > game.json   # export again from the database at any
 The export is an administrative record and includes every Actor's objectives, private Messages and
 notes, so handle it accordingly. To read a finished game as a turn-by-turn after-action report,
 run `uv run amaw report GAME_ID` (or pass an export file); it writes
-`data/exports/GAME_ID-aar/report.md`, which includes the same private material. If a run is interrupted, `uv run amaw run --resume-game GAME_ID`
+`data/exports/GAME_ID-aar/report.md`, which includes the same private material. Add `--card` for a
+shareable card (`card.png` and a 12-second `card.mp4` sized for X) after a one-time
+`uv sync --extra share && uv run playwright install chromium`. If a run is interrupted, `uv run amaw run --resume-game GAME_ID`
 continues the same game (see [resuming a game](guide/operations.md#run-a-game)). To install
 from a built wheel instead of a checkout, see
 [installation](guide/operations.md#requirements-and-installation).
