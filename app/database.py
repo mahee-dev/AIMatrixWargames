@@ -59,7 +59,21 @@ def engine_for_path(database_path: Path | str) -> Engine:
         connect_args={"timeout": 30},
     )
     event.listen(engine, "connect", _enforce_foreign_keys)
+    event.listen(engine, "connect", _use_write_ahead_log)
     return engine
+
+
+def _use_write_ahead_log(dbapi_connection, _connection_record) -> None:
+    """Keep the database in WAL journal mode, so readers never block the game's writes.
+
+    Under SQLite's default rollback journal, a process that holds a read transaction (an
+    export, an observer) keeps a writer from committing until the busy timeout expires. In WAL
+    mode readers keep a snapshot and the writer commits at once. Writes are still serialised
+    by the one write lock, so ``BEGIN IMMEDIATE`` guards keep their meaning (TRD §26.1, #12,
+    D-123). The mode is stored in the file, so setting it on every connect is a no-op after the
+    first.
+    """
+    dbapi_connection.execute("PRAGMA journal_mode=WAL")
 
 
 def _enforce_foreign_keys(dbapi_connection, _connection_record) -> None:

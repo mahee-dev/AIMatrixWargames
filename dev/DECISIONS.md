@@ -19,6 +19,19 @@ silent.
 
 ---
 
+### D-123 — The game database runs in WAL journal mode (#12)
+**Date:** 2026-10-10 · **Status:** accepted
+**Context:** `engine_for_path` left SQLite in its default rollback journal, where a process
+holding a read transaction blocks the game's commits until the 30 s busy timeout. Concurrent
+games on one file (run 23) and the observer feed (#23), which reads while a run writes, both
+depend on readers not stalling the writer.
+**Decision:** Every app engine sets `PRAGMA journal_mode=WAL` on connect. Writes stay serialised
+by SQLite's single write lock, so the `BEGIN IMMEDIATE` guards and the TRD §26.1 envelope are
+unchanged; `synchronous` keeps its default.
+**Consequence:** The database file gains `-wal` and `-shm` side files, ignored by git. Copying
+the `.db` file alone while a process has it open can miss recent commits; use the export.
+WAL needs a local filesystem, which §26.1 already requires.
+
 ### D-121 — The share card and narrated headline belong to the after-action report
 **Date:** 2026-10-10 · **Status:** accepted · owner direction
 **Context:** #16 adds a deterministic after-action report. The owner also wants a shareable

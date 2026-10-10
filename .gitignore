@@ -16,6 +16,8 @@ htmlcov/
 
 # AMAW runtime artefacts
 *.db
+*.db-wal
+*.db-shm
 *.sqlite
 *.sqlite3
 data/
