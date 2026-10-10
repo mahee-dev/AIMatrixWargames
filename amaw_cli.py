@@ -13,6 +13,7 @@ Umpire and app → drive → write; ``benchmark`` adds rotation, repetition and 
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 from contextlib import contextmanager
 from datetime import UTC, datetime
@@ -148,6 +149,84 @@ def report(
     elif narrate:
         typer.echo("error: --narrate writes the story for the cards; add --card", err=True)
         raise typer.Exit(code=2)
+
+
+@app.command()
+def watch(
+    game_id: str = typer.Argument(..., help="The game to watch."),
+    speed: float = typer.Option(
+        4.0, "--speed", min=0.0, help="Replay speed of a finished game, in events per second."
+    ),
+    step: bool = typer.Option(
+        False, "--step", help="Replay a finished game one event per keypress (space)."
+    ),
+    final: bool = typer.Option(
+        False, "--final", help="Show a finished game's final frame instead of replaying it."
+    ),
+) -> None:
+    """Watch a game in the terminal: follow a running game or replay a finished one.
+
+    The viewer reads the configured database read-only and shows every Actor's material,
+    private Messages included (TRD §41.1). Quitting never affects a run.
+    """
+    from sqlalchemy.exc import OperationalError
+
+    from app.config import Settings
+    from app.game_service import GameNotFound
+    from observer.feed import read_only_engine
+    from observer.watch import watch as run_viewer
+
+    try:
+        parsed = uuid.UUID(game_id)
+    except ValueError as exc:
+        typer.echo(f"error: {game_id!r} is not a valid game id", err=True)
+        raise typer.Exit(code=2) from exc
+    engine = read_only_engine(Settings().database_path)
+    try:
+        run_viewer(engine, parsed, replay=False if final else None, speed=speed, step=step)
+    except GameNotFound:
+        typer.echo(f"error: no game {game_id}", err=True)
+        raise typer.Exit(code=1) from None
+    except OperationalError as exc:
+        typer.echo(f"error: cannot read the database: {exc.orig}", err=True)
+        raise typer.Exit(code=1) from None
+    finally:
+        engine.dispose()
+
+
+@contextmanager
+def _viewer_during_run(settings: Settings, game_id: Callable[[], str | None]):
+    """Show the live viewer while a run plays, with operational logs kept off the terminal.
+
+    The viewer reads the database through its own read-only engine on a daemon thread. Logs that
+    would go to the terminal are detached for the duration, since the run logs to its log file.
+    The viewer is always closed, and the terminal restored, before the run reports its result.
+    """
+    from observer.feed import read_only_engine
+    from observer.watch import watch_in_background
+
+    root = logging.getLogger()
+    detached = [
+        handler for handler in root.handlers
+        if type(handler) is logging.StreamHandler
+    ]
+    for handler in detached:
+        root.removeHandler(handler)
+    engine = read_only_engine(settings.database_path)
+
+    def current() -> uuid.UUID | None:
+        value = game_id()
+        return uuid.UUID(value) if value else None
+
+    thread, stop = watch_in_background(engine, current)
+    try:
+        yield
+    finally:
+        stop.set()
+        thread.join(timeout=5)
+        engine.dispose()
+        for handler in detached:
+            root.addHandler(handler)
 
 
 def _story_for_cards(
@@ -325,6 +404,10 @@ LogLevelOpt = Annotated[str | None, typer.Option(
 )]
 LogFileOpt = Annotated[Path | None, typer.Option(
     "--log-file", help="Write timestamped, redacted operational logs to this file."
+)]
+WatchOpt = Annotated[bool, typer.Option(
+    "--watch",
+    help="Show the live terminal viewer while the game runs; logs go to --log-file.",
 )]
 StreamGameDetailsOpt = Annotated[bool | None, typer.Option(
     "--stream-game-details/--no-stream-game-details",
@@ -1286,6 +1369,7 @@ def run(
     log_level: LogLevelOpt = None,
     log_file: LogFileOpt = None,
     stream_game_details: StreamGameDetailsOpt = None,
+    watch: WatchOpt = False,
     cons_concurrency: ConsConcurrencyOpt = None,
     diplomacy_concurrency: DiplomacyConcurrencyOpt = None,
     diplomacy_mode: DiplomacyModeOpt = None,
@@ -1357,6 +1441,13 @@ def run(
         max_messages_per_phase=max_messages_per_phase,
         max_activations_per_opportunity=max_activations_per_opportunity,
     )
+    if watch and settings.log_file is None:
+        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+        settings = settings.model_copy(
+            update={"log_file": settings.database_path.parent / "logs" / f"run-{stamp}.log"}
+        )
+    if watch:
+        typer.echo(f"logs: {settings.log_file}", err=True)
     if export_path is not None:
         _refuse_database_export_path(export_path, settings.database_path)
     _require_agent_stack("autonomous runs")
@@ -1509,7 +1600,12 @@ def run(
                 **game_loop.as_dict(),
                 analysis_plan=sealed_plan,
             )
-            result = runner.run() if resume_game is None else runner.resume(resume_game)
+            viewer = (
+                _viewer_during_run(settings, lambda: runner.last_game_id if runner else None)
+                if watch else contextlib.nullcontext()
+            )
+            with viewer:
+                result = runner.run() if resume_game is None else runner.resume(resume_game)
     # I-085: a detected checkout that cannot be identified is a failed run, never a run under
     # another identity system.
     except (AutonomousGameError, PlayerError, CodeVersionError) as exc:
