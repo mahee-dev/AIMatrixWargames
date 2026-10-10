@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 from aar.model import AfterActionReport
 
-SCHEMA_VERSION = "story-v1"
+SCHEMA_VERSION: Literal["story-v1"] = "story-v1"
 
 
 class StoryActor(BaseModel):
@@ -259,12 +259,13 @@ def fallback_story(report: AfterActionReport, export: dict[str, Any]) -> Story:
     cites = [first_argument] if first_argument else [e["id"] for e in effects[:1]]
     summary = report.scenario_summary or f"{len(report.actors)} AI agents play {title}."
 
-    moments = []
+    moments: list[Moment] = []
     for turn in report.turns:
         if len(moments) == 4 or not turn.arguments:
             continue
         won = sum(1 for a in turn.arguments if a.ruling and a.ruling.success)
-        first_effect = (effects_by_turn.get(turn.number) or [None])[0]
+        turn_effects = effects_by_turn.get(turn.number) or []
+        first_effect = turn_effects[0] if turn_effects else None
         text = first_effect["description"] if first_effect else turn.arguments[0].action
         moments.append(Moment(
             when=f"Turn {turn.number}",
