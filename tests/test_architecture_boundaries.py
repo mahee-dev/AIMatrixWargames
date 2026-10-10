@@ -37,6 +37,8 @@ _CLEAN_IMPORTS = [
         _AGENTS_PACKAGE,
         id="TEST-T074-010",
     ),
+    # #16: the after-action report reads an export and needs no agent code or provider client.
+    pytest.param(("aar.model", "aar.markdown"), _AGENTS_PACKAGE, id="aar-report"),
 ]
 
 
@@ -115,3 +117,15 @@ def test_module_does_not_import_across_its_boundary(
 ) -> None:
     imported = _imported_modules(relative)
     assert imported.isdisjoint(forbidden), sorted(imported & forbidden)
+
+
+def test_app_never_imports_the_after_action_report() -> None:
+    """#16: the after-action report is built from exports after the game; the core never uses it."""
+    offenders = {
+        str(path.relative_to(REPO_ROOT)): sorted(
+            m for m in _imported_modules(str(path.relative_to(REPO_ROOT)))
+            if m == "aar" or m.startswith("aar.")
+        )
+        for path in (REPO_ROOT / "app").glob("*.py")
+    }
+    assert not {k: v for k, v in offenders.items() if v}

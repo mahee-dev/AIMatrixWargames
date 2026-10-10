@@ -64,3 +64,11 @@ def short_game(tmp_path_factory: pytest.TempPathFactory) -> Path:
     from tests.benchmark_helpers import derive_short_fixture
 
     return derive_short_fixture(tmp_path_factory.mktemp("short-game") / "deterministic-game")
+
+
+@pytest.fixture(scope="session")
+def canonical_export(tmp_path_factory: pytest.TempPathFactory) -> dict:
+    """The canonical six-turn game, played offline once per session and exported (#16)."""
+    from tests.aar_helpers import canonical_export as play
+
+    return play(tmp_path_factory.mktemp("aar") / "aar.db")

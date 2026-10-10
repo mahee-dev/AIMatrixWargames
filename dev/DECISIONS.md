@@ -19,6 +19,17 @@ silent.
 
 ---
 
+### D-121 — The share card and narrated headline belong to the after-action report
+**Date:** 2026-10-10 · **Status:** accepted · owner direction
+**Context:** #16 adds a deterministic after-action report. The owner also wants a shareable
+image/video card and an optional LLM-written headline for marketing. TRD §41 excludes human UIs.
+**Decision:** Both are TRD §34 AAR products: static files generated after the game from its
+export, with no authority over game state. They are not a human UI and need no §41 amendment.
+The card may include private material (the operator's own game); the narrator's beats must cite
+ids present in the export. Design: `dev/plans/2026-10-10-aar-share-card-design.md`.
+**Consequence:** New package `aar/` outside `app/`; optional extra `share` (Playwright,
+imageio-ffmpeg). No winner panel until #15.
+
 ### D-120 — The public repository is named `AIMatrixWargames`
 **Date:** 2026-09-28 · **Status:** accepted · owner direction
 **Context:** I-152 planned to publish the snapshot as `mahee-dev/AMAW`, which is this private
