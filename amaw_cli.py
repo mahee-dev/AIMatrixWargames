@@ -194,6 +194,86 @@ def watch(
         engine.dispose()
 
 
+@app.command()
+def publish(
+    game_id: str = typer.Argument(..., help="The game to publish."),
+    follow: bool = typer.Option(
+        True, "--follow/--no-follow",
+        help="Keep publishing until the game completes (default), or stop once caught up.",
+    ),
+) -> None:
+    """Publish a game's observer feed to the relay in AMAW_RELAY_URL (TRD §41.1).
+
+    A finished game is backfilled; a running game is followed until it completes. The relay holds
+    the cursor, so publishing again resumes where it stopped. Published games include every
+    Actor's private material.
+    """
+    from sqlalchemy.exc import OperationalError
+
+    from app.config import Settings
+    from app.game_service import GameNotFound
+    from observer import publish as publishing
+    from observer.feed import read_only_engine
+
+    try:
+        parsed = uuid.UUID(game_id)
+    except ValueError as exc:
+        typer.echo(f"error: {game_id!r} is not a valid game id", err=True)
+        raise typer.Exit(code=2) from exc
+    try:
+        relay = publishing.relay_settings()
+    except publishing.PublishError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=2) from None
+    engine = read_only_engine(Settings().database_path)
+    client = publishing._client(relay)
+    try:
+        publisher = publishing.Publisher(engine, parsed, client=client, token=relay.token)
+        sent = publisher.run(follow=follow)
+    except GameNotFound:
+        typer.echo(f"error: no game {game_id}", err=True)
+        raise typer.Exit(code=1) from None
+    except OperationalError as exc:
+        typer.echo(f"error: cannot read the database: {exc.orig}", err=True)
+        raise typer.Exit(code=1) from None
+    except publishing.PublishError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=1) from None
+    finally:
+        client.close()
+        engine.dispose()
+    typer.echo(f"published {sent} item(s) to {relay.url} (cursor {publisher.cursor})")
+
+
+@contextmanager
+def _publisher_during_run(settings: Settings, relay: Any, game_id: Callable[[], str | None]):
+    """Publish the run's game to the relay on a daemon thread, draining it when the run ends.
+
+    The publisher reads through its own read-only engine and never raises into the run; a dead
+    relay costs the run nothing but the bounded drain at the end (TRD §41.1).
+    """
+    from observer import publish as publishing
+    from observer.feed import read_only_engine
+
+    engine = read_only_engine(settings.database_path)
+    client = publishing._client(relay)
+
+    def current() -> uuid.UUID | None:
+        value = game_id()
+        return uuid.UUID(value) if value else None
+
+    thread, stop = publishing.publish_in_background(
+        engine, current, client=client, token=relay.token
+    )
+    try:
+        yield
+    finally:
+        stop.set()
+        thread.join(timeout=60)
+        client.close()
+        engine.dispose()
+
+
 @contextmanager
 def _viewer_during_run(settings: Settings, game_id: Callable[[], str | None]):
     """Show the live viewer while a run plays, with operational logs kept off the terminal.
@@ -404,6 +484,10 @@ LogLevelOpt = Annotated[str | None, typer.Option(
 )]
 LogFileOpt = Annotated[Path | None, typer.Option(
     "--log-file", help="Write timestamped, redacted operational logs to this file."
+)]
+PublishOpt = Annotated[bool, typer.Option(
+    "--publish",
+    help="Publish the game live to the relay in AMAW_RELAY_URL (includes private material).",
 )]
 WatchOpt = Annotated[bool, typer.Option(
     "--watch",
@@ -1370,6 +1454,7 @@ def run(
     log_file: LogFileOpt = None,
     stream_game_details: StreamGameDetailsOpt = None,
     watch: WatchOpt = False,
+    publish: PublishOpt = False,
     cons_concurrency: ConsConcurrencyOpt = None,
     diplomacy_concurrency: DiplomacyConcurrencyOpt = None,
     diplomacy_mode: DiplomacyModeOpt = None,
@@ -1448,6 +1533,16 @@ def run(
         )
     if watch:
         typer.echo(f"logs: {settings.log_file}", err=True)
+    relay = None
+    if publish:
+        from observer.publish import PublishError, relay_settings
+
+        try:
+            relay = relay_settings()
+        except PublishError as exc:
+            typer.echo(f"error: --publish: {exc}", err=True)
+            raise typer.Exit(code=2) from None
+        typer.echo(f"publishing to {relay.url}", err=True)
     if export_path is not None:
         _refuse_database_export_path(export_path, settings.database_path)
     _require_agent_stack("autonomous runs")
@@ -1600,11 +1695,16 @@ def run(
                 **game_loop.as_dict(),
                 analysis_plan=sealed_plan,
             )
-            viewer = (
-                _viewer_during_run(settings, lambda: runner.last_game_id if runner else None)
-                if watch else contextlib.nullcontext()
-            )
-            with viewer:
+            def current_game() -> str | None:
+                return runner.last_game_id if runner else None
+
+            with contextlib.ExitStack() as presentation:
+                if relay is not None:
+                    presentation.enter_context(
+                        _publisher_during_run(settings, relay, current_game)
+                    )
+                if watch:
+                    presentation.enter_context(_viewer_during_run(settings, current_game))
                 result = runner.run() if resume_game is None else runner.resume(resume_game)
     # I-085: a detected checkout that cannot be identified is a failed run, never a run under
     # another identity system.
