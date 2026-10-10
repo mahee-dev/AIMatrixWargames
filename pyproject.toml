@@ -66,7 +66,7 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 # Flat layout: the code packages sit at the repository root (TRD §5). ``amaw_resources`` is the
 # deliberately small runtime-data namespace; maintainer docs and archived scenarios stay out.
-packages = ["app", "agents", "benchmark", "aar", "amaw_resources"]
+packages = ["app", "agents", "benchmark", "aar", "observer", "amaw_resources"]
 # The CLI is a single top-level module (not pre-split into a package — TRD §5), kept out of the
 # engine packages above so the `app/` import boundary holds as it grows.
 py-modules = ["amaw_cli", "amaw_contracts", "amaw_unattended"]
@@ -103,6 +103,8 @@ files = [
     "amaw_contracts.py",
     # #16: the after-action report reads untyped export JSON into typed models.
     "aar",
+    # #23: the observer feed's item shapes are the export's; keep them typed at the boundary.
+    "observer",
     "amaw_cli.py",
     "agents/model_client.py",
     "agents/tool_surface.py",
