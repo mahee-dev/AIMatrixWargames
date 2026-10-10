@@ -116,7 +116,8 @@ CHAR_BUDGETS: dict[str, int] = {"actors.number": 6, "result.figure.value": 6}
 
 
 def _words(text: str) -> int:
-    return len(text.split())
+    """Words as a reader counts them: symbols such as "+" or "→" are not words."""
+    return sum(1 for token in text.split() if re.search(r"\w", token))
 
 
 def _squash(text: str) -> str:
@@ -283,7 +284,7 @@ def fallback_story(report: AfterActionReport, export: dict[str, Any]) -> Story:
                        key=lambda m: len(m.get("text") or ""), reverse=True)[:2]
         doors = ClosedDoors(
             title="What they said in private",
-            quotes=[Quote(message_id=m["id"], text=_first_words(m["text"], 28)) for m in picks],
+            quotes=[Quote(message_id=m["id"], text=_first_words(m["text"], 18)) for m in picks],
         )
 
     rolled = sum(1 for a in adjudicated if a.ruling and a.ruling.mode == "probabilistic")
