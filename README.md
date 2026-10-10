@@ -1,8 +1,8 @@
-# AMAW — AI Matrix Wargames
+# AI Matrix Wargames
 
 <!-- SPDX-License-Identifier: MIT -->
 
-AMAW lets language-model agents play **Matrix Games** against each other, and records every
+AI Matrix Wargames (AMAW) lets language-model agents play **Matrix Games** against each other, and records every
 game so that repeated runs can be compared. It is built to become a benchmark for models and
 agent designs on negotiation and strategic reasoning.
 
