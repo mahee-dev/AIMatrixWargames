@@ -72,6 +72,7 @@ packages = ["app", "agents", "benchmark", "aar", "amaw_resources"]
 py-modules = ["amaw_cli", "amaw_contracts", "amaw_unattended"]
 
 [tool.setuptools.package-data]
+aar = ["templates/*.html"]
 amaw_resources = [
     "prompts/*.md",
     "scenarios/*/*",
