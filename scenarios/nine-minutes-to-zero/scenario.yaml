@@ -1,0 +1,339 @@
+scenario:
+  id: nine-minutes-to-zero
+  version: 2.2.0
+  name: Nine Minutes to Zero — The Second Signal
+  description: FICTIONAL STRATEGIC DECISION EXERCISE. At 00:00 Aster receives a high-confidence but disputed 
+    warning about a possible Boran attack. Boran has announced an exercise, but newly circulated imagery of 
+    national-security vehicles creates a separate ambiguity. Verification is incomplete, public graphics are 
+    misleading, and both governments face deterrence and domestic-accountability costs. Three turns represent 
+    00:00–09:00 simulated minutes; provider latency does not consume fictional time. Subsequent escalation or 
+    restraint is determined by player choices.
+game:
+  max_turns: 3
+  in_world_turn_length: one simulated 3-minute decision window; provider latency does not advance simulated 
+    clock
+  turn_order:
+  - verification
+  - boran_command
+  - aster_command
+  - boran_leader
+  - aster_leader
+  primary_arguments_per_actor: 1
+  max_cons_per_actor: 1
+  diplomacy_mode: bounded_rounds
+  diplomacy_rounds_per_turn: 1
+  con_mode: sampled_sealed
+  con_challengers_per_argument: 1
+  consequence_mode: none
+rules:
+- id: authority-is-bounded
+  text: Actors may issue their own orders and disclosures only. They cannot make other Actors act, grant 
+    another Actor consent, seize technical systems, or command third parties. Each action must specify its 
+    lawful/contractual authority.
+- id: claims-are-not-facts
+  text: A Message, threat, quotation, estimate, image or AI confidence is evidence of a statement, not proof 
+    that the statement is true. Preserve source provenance and uncertainty in Effects.
+- id: grounded-branches
+  text: No technical capability, catastrophic consequence, institutional defection, access, or compliance may 
+    be established without a documented prerequisite. Automatic failure for missing prerequisites; otherwise 
+    adjudicate remaining uncertainty.
+- id: effect-discipline
+  text: Success and failure branches establish no more than three small observable Effects. Preserve and 
+    explicitly supersede earlier Effects when needed; do not infer a cascade from one statement.
+- id: clock-model
+  text: In-world turns are narrative decision windows. Provider latency, queue duration, and seat order never 
+    alter simulated time. Phase messages do not themselves imply a successful authenticated external 
+    transmission or additional time.
+- id: no-inject-takeover
+  text: Fixed injects describe independent external observations or public allegations. They do not override 
+    an Actor decision, establish a claimed hostile action, or predetermine resolution.
+- id: fiction-not-forecast
+  text: All states, institutions, events, procurement and documents are fictional. A successful simulated 
+    action is not proof of real-world risk or capability; the game's Umpire probabilities are not real-world 
+    frequencies.
+- id: three-crisis-windows
+  text: Turn 1 is 00:00–03:00, turn 2 is 03:00–06:00, turn 3 is 06:00–09:00. The sequence of AMAW Arguments is
+    not evidence that information travelled instantaneously or one state enjoyed chronological advantage.
+- id: two-signals
+  text: The original 00:00 warning and the separately reported vehicle movement are distinct observations. 
+    Neither validates the other or establishes offensive intent. Whether the exercise explanation is complete 
+    is not assumed true merely from Boran announcements; it requires evidence discovered or disclosed in play.
+- id: authority-release
+  text: Only a national Leader can authorize strategic release; only its corresponding Command can acknowledge
+    and act on an authorization. Authorization, acknowledgement, execution and physical consequences are 
+    separate Effects; no physical weapon use is represented in this scenario.
+- id: bounded-military-domain
+  text: Remain at national leadership, defensive readiness, communications and strategic assessment level. No 
+    launch sequence, targeting, payload, code, command-procedure or technical weapon employment is 
+    represented.
+- id: readiness-visibility
+  text: Both Commands can recommend and undertake only established defensive measures within standing 
+    authority. Externally observed readiness may be ambiguous; it never mechanically establishes offensive 
+    intent. Claims of changes must follow adjudicated Effects.
+- id: hotline-authentication
+  text: AMAW private/public Messages between capitals are proposed communications, not automatically 
+    authenticated state-to-state contact. The independent Verification Cell can authenticate the sender and 
+    relay content only after consent, available path and receipt are established through adjudicated steps; it
+    cannot guarantee truth of content.
+- id: evidence-asymmetry
+  text: The Verification Cell covers one corridor, not the globe. Lack of observed launch in that corridor 
+    cannot prove general absence. Internal sensor correlation findings are not known to Aster Leadership until
+    disclosed in play.
+- id: posture-no-autoplay
+  text: Preexisting exercise plans, recommendations and political demands do not execute themselves as 
+    strategic player decisions. Absence of a new adjudicated Command decision leaves the previously 
+    established posture unchanged.
+- id: media-claim
+  text: The crisis broadcast status graphics in the fixed injects are machine-produced PUBLIC CLAIMS, not 
+    authenticated records of weapons release, strategic order, or new Command posture.
+actors:
+  verification:
+    name: Joint Verification / Hotline Cell
+    public_description: Neutral multinational sensor-analysis and authenticated message relay, limited 
+      coverage and no military command authority
+    private_brief: 'You hold the missing contradiction: the raw neutral observation does not match the initial attack
+      track. But the only covered corridor is a fraction of the region and your last end-to-end hotline test is
+      stale. You can force both sides to confront uncertainty, or you can overstate certainty and lose trust if
+      later events diverge. You can authenticate the SENDER of an accepted message, never the truth of its contents.'
+    objectives:
+    - Secure a bilateral acknowledged relay before the 09:00 close
+    - Issue technically narrow and accurate statements without promising global proof
+    - Prevent your institution being used to launder a one-sided propaganda claim
+    private_information:
+    - The 00:40 independent passive observation does not contain an object corresponding to the claimed 00:00 
+      Aster track; coverage excludes other corridors.
+    - An urgent internal request from the cell funding council demands a public answer, but verification staff
+      warn that an absolute denial would exceed the evidence.
+    - A neutral contractor holds an original timestamp ledger for the later commercially circulated 
+      photograph.
+  boran_command:
+    name: Boran Strategic Command
+    public_description: National military command overseeing a defensive exercise and strategic readiness
+    private_brief: Your exercise created real visible movement, but not an authorized attack. Aborting every 
+      precaution would reduce defensive resilience and look like weakness; refusing any clarification could 
+      make the other side treat a drill as a threat. Your outdated dashboard warns of imminent Aster 
+      pre-emption; your current professional staff disagree. You cannot issue strategic release.
+    objectives:
+    - Protect Boran personnel and strategic communications without inviting a first strike
+    - Give your civilian leader a true exercise account even if it exposes a reporting failure
+    - Avoid appearing to concede control of lawful domestic exercises to Aster
+    private_information:
+    - Exercise plan EX-17 legitimately redeployed non-weapon command-support vehicles before 00:00; the 
+      movement is observable, and there is no Boran offensive authorization.
+    - A command dashboard still displays a ten-month-old pre-emption assumption contradicted by the most 
+      recent staff assessment.
+    - An internal aide failed to brief the civilian leader about how alarming the convoy imagery might appear 
+      overseas.
+  aster_command:
+    name: Aster Strategic Command
+    public_description: Military advisers and command responsible for readiness within standing defensive 
+      authority
+    private_brief: You hold an unreleased sensor-correlation memo. Reporting it now could avert a terrible 
+      error but would reveal that Command approved a misleading executive summary. Independent reporting of 
+      exercise movements may soon emerge; absent verified timestamps and mission it could trigger a second 
+      misleading threat assessment. You can recommend reversible protection, but must recognize that such 
+      measures could be visible abroad.
+    objectives:
+    - Protect Aster with proportionate, defensible readiness decisions
+    - Inform civilian leadership of material source dependence before irreversible authorizations
+    - Preserve command credibility without making unsupported claims about an attack
+    private_information:
+    - SENTINEL-S8 double-counted a single upstream feed as two independent confirmations, and the patch 
+      altered treatment of missing values.
+    - An initial leadership summary omitted the dependence footnote despite an engineering warning; the 
+      omission was made inside Command review.
+    - A visible defensive posture change could prompt Boran to mirror it, while leaving current posture 
+      unchanged carries a non-zero defence risk.
+  boran_leader:
+    name: Boran National Leadership
+    public_description: Civilian authority over Boran strategic national decisions
+    private_brief: You know no offensive launch was ordered, but Command failed to brief you about a sensitive
+      exercise convoy that moved shortly before the AI warning. A televised stand-down with no reciprocal 
+      assurance threatens your governing coalition. You can authorize narrow signed clarification without 
+      surrendering all strategic readiness.
+    objectives:
+    - Avoid accidental strategic war while preserving deterrence credibility
+    - Secure acknowledged direct communication with Aster and insist on reciprocal truthfulness
+    - Prevent rivals from portraying a unilateral stand-down as capitulation
+    private_information:
+    - You authorized a DEFENSIVE exercise only; no attack or strategic release.
+    - The cabinet coalition is fragile and an uncompensated public withdrawal from the exercise may trigger a 
+      confidence motion.
+    - You could privately consent to a narrow authenticated exercise-telemetry summary, but detailed 
+      order-of-battle data cannot be released.
+  aster_leader:
+    name: Aster National Leadership
+    public_description: Civilian authority over Aster strategic national decisions
+    private_brief: Your brief says HIGH CONFIDENCE, but a second assessment disagrees. Aster media are already
+      asking why no national statement was issued. Security advisers urge a visible move; legal advisers warn 
+      irreversible authorization requires verified grounds. You can act defensively and request proof, or 
+      gamble on waiting; each risks a different political and security cost.
+    objectives:
+    - Protect Aster without authorizing unjustified irreversible force
+    - Demand candid internal evidence and an authenticated foreign clarification
+    - Maintain public confidence without treating media rumours as intelligence
+    private_information:
+    - The cabinet has only a two-page warning summary; the missing feed-dependence note is held by Aster 
+      Command.
+    - A national continuity briefing at simulated 09:00 will require you to explain your crisis posture to the
+      cabinet; it does not automatically order an escalation.
+    - Your normal executive channel is intermittently delayed; a neutral authenticated relay might help but 
+      must be explicitly established.
+starting_effects:
+- description: At simulated 00:00, Aster Sentinel-S8 AI issued a HIGH-confidence warning of an apparent 
+    attack; separate human-led analysis disagreed. No independent strategic launch is confirmed.
+  visibility: public
+- description: Boran publicly announced defensive exercise EX-17 before the crisis. National leaders have 
+    exchanged no newly authenticated crisis message.
+  visibility: public
+- description: A neutral Verification Cell offers a standby authenticated hotline with limited sensor 
+    coverage; successful bilateral receipt has not yet been established.
+  visibility: public
+- description: Both states maintain their pre-crisis military posture unless their authorized players change 
+    it through adjudicated action. No strategic release is authorized or executed at opening.
+  visibility: public
+- description: SENTINEL-S8 used two apparently independent channels that share an upstream feed, and a recent 
+    scoring patch altered missing-value treatment. This strongly undermines its claimed precision; it does not
+    alone establish complete absence of hostile action.
+  visibility: private
+  visible_to:
+  - aster_command
+- description: Boran has not authorized an attack. Exercise EX-17 included earlier movement of unarmed 
+    strategic communications support vehicles, and the national Leader lacks its full exposure picture.
+  visibility: private
+  visible_to:
+  - boran_command
+- description: Boran has issued no offensive strategic release authorization as of 00:00.
+  visibility: private
+  visible_to:
+  - boran_leader
+- description: The Verification Cell observed no matching launch event inside the single corridor it 
+    independently monitors; its coverage is incomplete.
+  visibility: private
+  visible_to:
+  - verification
+injects:
+- id: neutral-corridor-update
+  turn: 2
+  description: 'At simulated 03:00, the neutral cell receives a maintenance-validated observation: no independently
+    corroborated object matching the ORIGINAL Sentinel-S8 track was detected in its monitored corridor. It cannot
+    rule out activity elsewhere or later changes in posture.'
+  visibility: public
+- id: commercial-photograph
+  turn: 2
+  description: At simulated 03:00, a commercial news service circulates an image of four BORAN GOVERNMENT 
+    VEHICLES. The published timestamp is disputed and the headline calls it strategic mobilization. The 
+    vehicles are real, but their mission, time of movement and command connection are not verified by the 
+    picture.
+  visibility: public
+- id: public-status-mislabel
+  turn: 3
+  description: At simulated 06:00, Aster civil-warning graphics automatically display the label "STRATEGIC 
+    RESPONSE ACTIVE" derived from an administrative alert category; the graphic is not an authenticated 
+    national release order and may be misleading abroad.
+  visibility: public
+- id: forensic-clock-note
+  turn: 3
+  description: At simulated 06:00, a neutral forensic clock-check independently confirms the convoy image 
+    predates Sentinel-S8's 00:00 warning. It cannot verify the convoy's mission or whether either government 
+    has changed readiness since.
+  visibility: public
+resources:
+- id: public-clock
+  name: Crisis Decision Windows
+  type: background
+  path: resources/01_PUBLIC_decision_windows.md
+  visibility: public
+  tags:
+  - clock
+  - authority
+- id: public-wire
+  name: Public Wires and Strategic Alerts
+  type: press_archive
+  path: resources/02_PUBLIC_wires_and_alerts.md
+  visibility: public
+  tags:
+  - media
+  - evidence
+- id: cell-raw
+  name: Joint Verification Cell Corridor Log
+  type: intelligence
+  path: resources/03_PRIVATE_joint_cell_corridor_log.md
+  visibility: private
+  visible_to:
+  - verification
+  tags:
+  - raw
+  - sensor
+- id: relay-protocol
+  name: Authenticated Hotline Operating Terms
+  type: technical_reference
+  path: resources/04_RESTRICTED_hotline_terms.md
+  visibility: private
+  visible_to:
+  - verification
+  - aster_leader
+  - boran_leader
+  tags:
+  - hotline
+  - authority
+- id: boran-exercise
+  name: Boran Exercise Support Manifest
+  type: intelligence
+  path: resources/05_PRIVATE_boran_exercise_manifest.md
+  visibility: private
+  visible_to:
+  - boran_command
+  - boran_leader
+  tags:
+  - exercise
+  - images
+- id: boran-command
+  name: Boran Command Alert Assessment
+  type: intelligence
+  path: resources/06_PRIVATE_boran_command_stale_alert.md
+  visibility: private
+  visible_to:
+  - boran_command
+  tags:
+  - readiness
+  - brief
+- id: aster-forensic
+  name: Aster Sentinel-S8 Sensor Exception
+  type: technical_reference
+  path: resources/07_PRIVATE_aster_sensor_exception.md
+  visibility: private
+  visible_to:
+  - aster_command
+  tags:
+  - technical
+  - error
+- id: aster-cabinet
+  name: Aster Cabinet Decision Brief
+  type: intelligence
+  path: resources/08_PRIVATE_aster_cabinet_brief.md
+  visibility: private
+  visible_to:
+  - aster_leader
+  tags:
+  - cabinet
+  - political
+- id: aster-defensive-options
+  name: Aster Defensive Readiness Options
+  type: capability
+  path: resources/09_PRIVATE_aster_defensive_posture.md
+  visibility: private
+  visible_to:
+  - aster_command
+  - aster_leader
+  tags:
+  - options
+  - authority
+- id: analysis-audit
+  name: Evidence Provenance and Classification Guide
+  type: background
+  path: resources/10_PUBLIC_evidence_classification.md
+  visibility: public
+  tags:
+  - evidence
+  - definitions
