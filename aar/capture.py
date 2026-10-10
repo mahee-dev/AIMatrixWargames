@@ -1,4 +1,4 @@
-"""Capture the share card as a PNG and an H.264 MP4 by stepping its animations frame by frame.
+"""Capture the story cards as PNGs and one H.264 MP4 by stepping their animations frame by frame.
 
 Seeking every animation to a fixed time, rather than recording the screen, makes captures
 identical between runs and independent of machine speed (#18). Playwright and imageio-ffmpeg
@@ -9,7 +9,7 @@ come from the optional ``share`` extra; without them, or without Chromium, captu
 from __future__ import annotations
 
 import subprocess
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -17,7 +17,7 @@ from typing import Any
 INSTALL_HINT = "uv sync --extra share && uv run playwright install chromium"
 WIDTH, HEIGHT = 1200, 675
 FPS = 30
-SECONDS = 12.0
+SECONDS_PER_SCREEN = 5.0
 
 _PAUSE = "document.getAnimations().forEach(a => a.pause())"
 _SEEK = "t => document.getAnimations().forEach(a => { a.currentTime = t; })"
@@ -67,9 +67,10 @@ def _ffmpeg() -> str:
 
 
 def capture_mp4(
-    html_path: Path, mp4_path: Path, *, fps: int = FPS, seconds: float = SECONDS
+    html_paths: Sequence[Path], mp4_path: Path, *, fps: int = FPS,
+    seconds_per_screen: float = SECONDS_PER_SCREEN,
 ) -> None:
-    """Every frame of the animation, piped as PNGs to the bundled ffmpeg: H.264, yuv420p,
+    """Every frame of every screen in turn, piped as PNGs to the bundled ffmpeg: H.264, yuv420p,
     1200×676 (one padding row)."""
     command = [
         _ffmpeg(), "-y", "-loglevel", "error",
@@ -79,17 +80,18 @@ def capture_mp4(
         "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "medium", "-crf", "18",
         "-movflags", "+faststart", str(mp4_path),
     ]
-    with _page(html_path, scale=1) as page:
-        page.evaluate(_PAUSE)
-        encoder = subprocess.Popen(command, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-        assert encoder.stdin is not None
-        try:
-            for frame in range(round(fps * seconds)):
-                page.evaluate(_SEEK, frame * 1000 / fps)
-                encoder.stdin.write(page.screenshot(type="png"))
-        finally:
-            encoder.stdin.close()
-            stderr = encoder.stderr.read().decode() if encoder.stderr else ""
-            code = encoder.wait()
-        if code != 0:
-            raise RuntimeError(f"ffmpeg failed ({code}): {stderr.strip()}")
+    encoder = subprocess.Popen(command, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    assert encoder.stdin is not None
+    try:
+        for html_path in html_paths:
+            with _page(html_path, scale=1) as page:
+                page.evaluate(_PAUSE)
+                for frame in range(round(fps * seconds_per_screen)):
+                    page.evaluate(_SEEK, frame * 1000 / fps)
+                    encoder.stdin.write(page.screenshot(type="png"))
+    finally:
+        encoder.stdin.close()
+        stderr = encoder.stderr.read().decode() if encoder.stderr else ""
+        code = encoder.wait()
+    if code != 0:
+        raise RuntimeError(f"ffmpeg failed ({code}): {stderr.strip()}")

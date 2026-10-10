@@ -13,21 +13,34 @@ pytest.importorskip("playwright.sync_api")
 imageio_ffmpeg = pytest.importorskip("imageio_ffmpeg")
 
 from aar.capture import CaptureUnavailable, capture_mp4, capture_png  # noqa: E402
-from aar.card import render_card_html  # noqa: E402
+from aar.card import render_screens  # noqa: E402
+from aar.facts import run_facts  # noqa: E402
 from aar.model import build_report  # noqa: E402
+from aar.story import fallback_story  # noqa: E402
 
 pytestmark = pytest.mark.slow
 
 
 @pytest.fixture(scope="module")
-def card_html(tmp_path_factory: pytest.TempPathFactory, canonical_export: dict) -> Iterator[Path]:
-    path = tmp_path_factory.mktemp("card") / "card.html"
-    path.write_text(render_card_html(build_report(canonical_export)), encoding="utf-8")
+def pages(tmp_path_factory: pytest.TempPathFactory, canonical_export: dict) -> Iterator[list[Path]]:
+    report = build_report(canonical_export)
+    screens = render_screens(fallback_story(report, canonical_export), run_facts(canonical_export), report)
+    folder = tmp_path_factory.mktemp("cards")
+    paths = []
+    for n, (_, html) in enumerate(screens, 1):
+        path = folder / f"card-{n}.html"
+        path.write_text(html, encoding="utf-8")
+        paths.append(path)
     try:
-        capture_png(path, path.with_suffix(".probe.png"))
+        capture_png(paths[0], folder / "probe.png")
     except CaptureUnavailable as exc:
         pytest.skip(str(exc))
-    yield path
+    yield paths
+
+
+@pytest.fixture
+def card_html(pages: list[Path]) -> Path:
+    return pages[0]
 
 
 def _png_size(path: Path) -> tuple[int, int]:
@@ -48,9 +61,9 @@ def test_png_capture_is_repeatable(card_html: Path, tmp_path: Path) -> None:
     assert first.read_bytes() == second.read_bytes()
 
 
-def test_mp4_has_every_frame(card_html: Path, tmp_path: Path) -> None:
+def test_mp4_plays_every_screen_in_turn(pages: list[Path], tmp_path: Path) -> None:
     out = tmp_path / "card.mp4"
-    capture_mp4(card_html, out, fps=10, seconds=3)
+    capture_mp4(pages[:2], out, fps=10, seconds_per_screen=1.5)
     frames, seconds = imageio_ffmpeg.count_frames_and_secs(str(out))
     assert abs(frames - 30) <= 1
     assert abs(seconds - 3) < 0.2
