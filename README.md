@@ -99,6 +99,12 @@ Every scenario in the checkout runs by name: `northern-strait`, `orison-crisis`,
 name lists the ones that work. A fifth scenario, `ai-2027`, is held back from the public
 repository until the authors of AI 2027 have agreed to its publication.
 
+To follow the game as it plays, add `--watch`: the terminal shows a live dashboard (turn and
+phase, each Actor, the last ruling with the Umpire's probability and the server's roll, and every
+Message, private ones included) while logs go to `data/logs/`. From another terminal,
+`uv run amaw watch GAME_ID` attaches to a running game or replays a finished one (`--speed`,
+`--step`); quitting the viewer never stops the run.
+
 When it finishes, the command prints the game ID and writes the full record to
 `data/exports/GAME_ID.json`, beside the database:
 
@@ -152,6 +158,7 @@ agent configuration is compared. The experimental design is in
 | `app/` | The FastAPI core: engine, storage, visibility, export. Never imports an agent framework. [`app/README.md`](app/README.md) is the module map. |
 | `agents/` | The reference PydanticAI player, the umpire adapter and the autonomous runner. |
 | `benchmark/` | Batch scheduling, sealed conditions and CSV outputs. |
+| `observer/` | The read-only observer feed and the `amaw watch` terminal viewer (TRD §41.1). |
 | `scenarios/` | Scenario packages; [`scenarios/README.md`](scenarios/README.md) says which to start with. |
 | `amaw_resources/` | The prompts and supported scenarios packaged into the wheel. |
 | `docs/` | The normative contracts (API, state machine, scenario format, agents, testing, benchmark methodology) and every versioned prompt. If a guide and a contract disagree, the contract wins. |
