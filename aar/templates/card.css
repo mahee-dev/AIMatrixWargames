@@ -1,0 +1,84 @@
+/* The story cards: a fixed dark theme, because each page is exported as an image. Colours are the
+   dataviz reference dark steps; Actor hues are categorical slots in the scenario's Actor order and
+   always sit next to the Actor's name. The amber brand accent never encodes data. Base styles are
+   the END state of every animation, so `body.final` (animations off) is the still frame. */
+:root{--page:#0d0d0d;--surface:#1a1a19;--raised:#242423;--ink:#fff;--ink-2:#d0cfc6;--muted:#9a9890;
+--grid:#2c2c2a;--base:#3a3a37;--ring:rgba(255,255,255,.10);--good:#0ca30c;--critical:#d03b3b;--brand:#ffb547;
+--a0:#3987e5;--a1:#d95926;--a2:#199e70;--a3:#c98500;--a4:#d55181;--a5:#008300;--a6:#9085e9;--a7:#e66767;--a-none:#9a9890;
+font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1200px;height:675px;overflow:hidden;background:var(--page);color:var(--ink)}
+.card{position:absolute;inset:16px;background:var(--surface);border-radius:20px;box-shadow:inset 0 0 0 1px var(--ring);padding:28px 40px}
+.card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;border-radius:20px 0 0 20px;background:var(--brand)}
+.top{display:flex;align-items:center;gap:14px;white-space:nowrap}
+.badge{background:var(--brand);color:#141414;font-size:14px;font-weight:850;letter-spacing:.1em;padding:5px 11px;border-radius:6px}
+.kicker{font-size:16px;color:var(--ink-2);font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.credit{margin-left:auto;font-size:13px;color:var(--muted)}
+.step{font-size:15px;color:var(--muted);font-weight:700}.step b{color:var(--ink)}
+h1{font-size:54px;line-height:1.05;font-weight:850;margin-top:14px;letter-spacing:-.01em}
+.long-page h1{font-size:44px}
+.dek{font-size:23px;line-height:1.35;color:var(--ink-2);margin-top:12px}
+.lbl{font-size:14px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.tag{font-size:16px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--raised);color:var(--ink-2);display:inline-flex;align-items:center;gap:7px}
+.dot{width:11px;height:11px;border-radius:6px;display:inline-block;flex:none}
+footer{position:absolute;left:40px;right:40px;bottom:20px;display:flex;align-items:center;gap:14px;font-size:16px;color:var(--ink-2);white-space:nowrap}
+.mark{font-weight:900;letter-spacing:.06em;color:var(--ink);font-size:17px;display:flex;align-items:center;gap:8px}
+.mark i{width:14px;height:14px;background:var(--brand);transform:rotate(45deg);border-radius:2px}
+footer .url{margin-left:auto;color:var(--brand);font-weight:700}
+
+/* 1 — question and answer */
+.q{font-size:24px;font-weight:700;color:var(--brand);margin-top:16px}.ans{margin-top:4px}
+.res{display:grid;grid-template-columns:400px 1fr;gap:22px;margin-top:22px}
+.fig{background:var(--raised);border-radius:16px;padding:18px 24px}
+.big{font-size:92px;font-weight:850;line-height:.95;letter-spacing:-.02em}.long-page .big{font-size:68px}
+.big small{font-size:32px;color:var(--muted);margin-left:10px;letter-spacing:0}
+.figlabel{font-size:20px;color:var(--ink-2);margin-top:10px;line-height:1.3}
+.facts{display:grid;gap:10px;align-content:start}.tile{background:var(--raised);border-radius:14px;padding:11px 18px}
+.long-page .tile{padding:8px 18px}
+.tile b{font-size:25px;font-weight:800;display:block}.tile span{font-size:18px;color:var(--ink-2);display:block;margin-top:2px}
+.played{position:absolute;left:40px;right:40px;bottom:62px;font-size:18px;font-weight:700;color:var(--brand);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* 2 — background */
+.bg{display:grid;grid-template-columns:1fr 400px;gap:36px;margin-top:22px}
+.blk{border-left:4px solid var(--base);padding:2px 0 2px 18px;margin-bottom:18px}.blk p{font-size:24px;line-height:1.3;margin-top:4px}
+.blk.qq{border-color:var(--brand)}.blk.qq p{font-size:31px;font-weight:850;line-height:1.15}
+.table .lbl{margin-bottom:4px}
+.who{display:grid;grid-template-columns:12px 1fr;column-gap:12px;padding:9px 0;border-top:1px solid var(--grid)}.who .dot{margin-top:7px}
+.nm{font-size:21px;font-weight:800}.num{margin-left:8px;color:var(--brand);font-weight:850}
+.who p{font-size:18px;color:var(--ink-2);line-height:1.25;margin-top:1px}
+.dense .who{padding:5px 0}.dense .nm{font-size:18px}.dense .who p{font-size:16px}
+
+/* 3 — behind closed doors */
+.doors{display:grid;grid-template-columns:1fr 330px;gap:28px;margin-top:28px}.thread{display:flex;flex-direction:column;gap:18px}
+.msg{background:var(--raised);border-radius:16px;padding:18px 24px;box-shadow:inset 0 0 0 1px var(--ring)}.msg.reply{background:#27262f}
+.head{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;color:var(--muted)}.head b{color:var(--ink);font-size:16px}
+.lock{font-size:13px;letter-spacing:.05em;text-transform:uppercase}.tr{margin-left:auto;font-size:13px}
+.msg q{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;font-size:29px;line-height:1.3;margin-top:8px;font-weight:550}
+.public{border-left:4px solid var(--ink-2);padding:2px 0 2px 16px}.public p,.payoff p{font-size:23px;line-height:1.32;margin-top:6px}
+.payoff{margin-top:20px;background:var(--raised);border-radius:16px;padding:14px 18px}
+
+/* 4 — how it happened */
+.line{position:relative;margin-top:52px;display:grid;gap:24px}
+.line:before{content:"";position:absolute;left:17px;right:17px;top:17px;height:3px;background:var(--base)}
+.moment{position:relative}
+.pin{width:36px;height:36px;border-radius:18px;background:var(--surface);box-shadow:inset 0 0 0 3px var(--ink-2);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:850}
+.win .pin{background:var(--good);box-shadow:none;color:#0d0d0d}.fail .pin{box-shadow:inset 0 0 0 3px var(--critical);color:var(--critical)}
+.when{font-size:15px;font-weight:800;color:var(--muted);letter-spacing:.08em;margin-top:14px;text-transform:uppercase}
+.moment h3{font-size:33px;line-height:1.08;font-weight:850;margin-top:6px}.moment p{font-size:23px;line-height:1.3;color:var(--ink-2);margin-top:8px}
+.tags{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+
+/* 5 — how this game was played */
+.run{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:26px;margin-top:20px}
+table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:18px;font-variant-numeric:tabular-nums}
+th{text-align:left;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:0 10px 6px 0;border-bottom:1px solid var(--base)}
+td{padding:9px 10px 9px 0;border-bottom:1px solid var(--grid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}td:first-child{font-weight:750}
+.dense table{font-size:16px}.dense td{padding:5px 10px 5px 0}
+td .dot{margin-right:9px}.dim{color:var(--muted);font-weight:500}tr.ump td{color:var(--ink-2)}
+.tiles{display:grid;gap:10px;align-content:start}.st{background:var(--raised);border-radius:14px;padding:10px 16px}
+.st b{font-size:27px;font-weight:850;display:block}.st span{font-size:14.5px;color:var(--ink-2);line-height:1.3;display:block}
+.repro{position:absolute;left:40px;right:40px;bottom:62px;font-size:15px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Entrance animations; each element's delay is set inline. */
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+.in{animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
+body.final *{animation:none !important}

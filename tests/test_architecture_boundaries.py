@@ -39,6 +39,9 @@ _CLEAN_IMPORTS = [
     ),
     # #16: the after-action report reads an export and needs no agent code or provider client.
     pytest.param(("aar.model", "aar.markdown"), _AGENTS_PACKAGE, id="aar-report"),
+    # #18: the cards need no agent code; the narrator uses the model client, never a framework.
+    pytest.param(("aar.story", "aar.facts", "aar.card", "aar.capture"), _AGENTS_PACKAGE, id="aar-cards"),
+    pytest.param(("aar.narrator",), _AGENT_FRAMEWORK, id="aar-narrator"),
 ]
 
 

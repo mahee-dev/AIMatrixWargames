@@ -26,6 +26,13 @@ dependencies = [
 agents = [
     "pydantic-ai>=0.0.14",
 ]
+# The after-action share card (#18): headless Chromium renders the card, and the ffmpeg binary
+# bundled in imageio-ffmpeg encodes the MP4, so no system package is needed. Chromium itself is
+# fetched once with `uv run playwright install chromium`.
+share = [
+    "playwright>=1.47",
+    "imageio-ffmpeg>=0.5",
+]
 
 [dependency-groups]
 # Layers 1-3 of the test suite run with no OpenRouter key (AGENTS.md §7).
@@ -40,6 +47,9 @@ dev = [
     "pydantic-ai>=0.0.14",
     # I-120: the static checker for the typed condition and recipe hand-offs; scoped below.
     "mypy>=2.3.1",
+    # #18: the share-card capture tests; they skip when Chromium is not installed.
+    "playwright>=1.47",
+    "imageio-ffmpeg>=0.5",
 ]
 
 [project.scripts]
@@ -62,6 +72,7 @@ packages = ["app", "agents", "benchmark", "aar", "amaw_resources"]
 py-modules = ["amaw_cli", "amaw_contracts", "amaw_unattended"]
 
 [tool.setuptools.package-data]
+aar = ["templates/*.css"]
 amaw_resources = [
     "prompts/*.md",
     "scenarios/*/*",

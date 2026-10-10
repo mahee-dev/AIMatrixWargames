@@ -645,6 +645,10 @@ Commit: `Add amaw report`.
 
 ## PR 2 — share card (new issue: "Shareable after-action card: PNG and MP4")
 
+> **Superseded.** PR 2 and PR 3 below describe the first card design (a board of rulings with an
+> optional headline). After review on four real runs they were replaced by five SCQA story cards
+> with a narrator, built as one pull request: see the design, §3–§9.
+
 Open the issue first, linking the design doc §3.4–3.5. Branch `aar-card`.
 
 ### Task 2.1 — Optional extra

@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
+from aar.narrator import NARRATOR_PROMPT_VERSIONS
 from agents.consequence import CONSEQUENCE_PROMPT_VERSIONS
 from agents.player import PLAYER_PROMPT_VERSIONS, REPLY_PLAYER_PROMPT_VERSIONS
 from agents.umpire import UMPIRE_PROMPT_VERSIONS
@@ -45,6 +46,7 @@ def _loadable() -> set[str]:
         | set(REPLY_PLAYER_PROMPT_VERSIONS.values())
         | set(UMPIRE_PROMPT_VERSIONS)
         | set(CONSEQUENCE_PROMPT_VERSIONS)
+        | set(NARRATOR_PROMPT_VERSIONS)
     )
 
 

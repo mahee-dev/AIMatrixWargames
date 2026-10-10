@@ -1,202 +1,186 @@
-# After-action report and share card — design
+# After-action report and story cards — design
 
-Status: approved in conversation 2026-10-10, pending spec review.
-Builds on #16 (after-action report). Governed by `docs/TRD.md §34` (AAR) and `docs/PRD.md §33`.
+Status: revised 2026-10-10 after review of mockups on four real runs; approved in conversation.
+Builds on #16 (after-action report, merged in #17). Governed by `docs/TRD.md §34` (AAR) and
+`docs/PRD.md §33`. Decision: D-121.
 
 ## 1. Goal
 
-Turn a finished game into something people want to share. Three products, all derived after
-the game from its export, none able to affect gameplay (TRD §34):
+Turn a finished game into something people want to share on X, and that sells AI Matrix Wargames:
 
-1. **`report.md`** — the complete, deterministic after-action report #16 asks for.
-2. **A share card** — a 1200×675 image (`card.png`) and a ~12 s animated video (`card.mp4`)
-   sized for X's large-image card, drawn from the same data.
-3. **An optional narrated headline** — an LLM-written headline and short story beats, shown on
-   the card, behind an explicit flag.
+1. **`report.md`**: the complete, deterministic after-action report (#16, done).
+2. **Five story cards**: 1200×675 PNGs, one per screen, plus one MP4 that plays all five. Screens
+   1–4 are the post (X allows four images); screen 5 goes in the first reply.
 
-Success: one command on a finished game produces a card a maintainer would post as-is, and every
-fact on it traces to the export.
+Success: one command on a finished game produces a set a maintainer would post as-is. Everything on
+it either comes straight from the export or is AI-written and checked against the export.
 
-## 2. Decisions taken
+The first card design, a board of probability bars and rolls, was dropped. It showed mechanics,
+not a story, and in games where nothing is rolled (the Swedish 7.0.0 run) it showed nothing.
+
+## 2. Decisions
 
 | Question | Decision |
 |---|---|
-| What carries the card | Deterministic highlights from the export (A), plus an optional LLM headline (B). No "winner" until #15 lands. |
-| Private material on the card | Allowed. The card and the narrator may use private Messages, objectives and private briefs. It is the operator's own game. |
-| Rendering | HTML/CSS card, captured by headless Chromium (Playwright). |
-| Video | Deterministic frame stepping, H.264 MP4 via `imageio-ffmpeg`. No GIF. |
-| Dependencies | New optional extra `share` (`playwright`, `imageio-ffmpeg`). Core install unchanged. |
+| Story structure | SCQA. The answer comes first, because on X the first image decides whether anyone reads on. |
+| Who writes the story | An LLM narrator, from the export, behind `--narrate`. Without it, a plainer story built from the record. |
+| Private material | Allowed (D-121). The narrator reads private Messages and objectives; screen 3 quotes them. |
+| Quotes | Verbatim from the Message, with `…` allowed between fragments; otherwise marked "translated". Checked mechanically. |
+| Simulation label | Every screen carries an "AI SIMULATION" badge. Scenarios name real people; no card may read as news. |
+| Branding | "AI Matrix Wargames" wordmark, the line "AI agents negotiate, scheme and strike deals", and the repository URL on every screen. |
+| Numbers | Counted from the export (messages, models, tokens, cost, rulings). The narrator never writes a count it cannot cite. |
+| Rendering | HTML/CSS screens captured by headless Chromium (Playwright), animations stepped frame by frame, H.264 MP4 via the ffmpeg bundled in `imageio-ffmpeg`. Optional extra `share`. |
+| Winner | None. Objective scoring is #15 and is never presented alone as a comparative claim (methodology §29). |
 
-Not in scope: a winner or score panel (#15; methodology §29 forbids presenting it alone as a
-comparative claim), GIF output, posting to X, any web UI (workbench, #1), styling themes.
+## 3. The five screens
 
-## 3. Architecture
+All screens: 1200×675, fixed dark theme, amber brand accent (`#ffb547`), the "AI SIMULATION" badge,
+a short kicker, step `n / 5`, and the brand footer. Text sizes hold on a phone (body ≥ 18 px,
+quotes ≥ 24 px, headlines 54 px). Actor colours are the dataviz categorical dark slots in the
+scenario's Actor order, never cycled. Every Actor chip also carries its name.
 
-New top-level package `aar/`, a sibling of `benchmark/`. It lives outside `app/`, so the model
-call in the narrator respects TRD §4 (OpenRouter stays outside the core game domain).
+1. **Question → Answer.** The question (amber) above the headline that answers it, a one- or
+   two-sentence summary, one big figure (value, unit, label), two facts, and the secret-message
+   count from the record. The model credit ("DeepSeek V4 Flash played all 8 parties") is counted
+   from the run manifest.
+2. **The background.** Situation, Complication, the Question (large), and "At the table": each
+   Actor's display name, an optional number (seats, troops), and what it wants.
+3. **Behind closed doors.** Two private quotes with sender → recipients and turn. Next to them:
+   what was said in public, and the payoff.
+4. **How it happened.** Up to four turning points on a line: when (e.g. "Turn 3", "Weeks 4–6"),
+   title, one sentence, outcome mark (✓ / ✗ / number), up to two Actor chips.
+5. **How this game was played.** From the record only: per Actor (and Umpire, Consequences) the
+   model, messages sent (secret), model calls, tokens, cost; totals for cost (with coverage,
+   "$0.94+" when some calls report no cost), tokens (reasoning share), runtime and calls,
+   Arguments granted and decided by dice; scenario, version, seed and prompt versions.
+
+Layout rules: a small cast (≤ 4 Actors, no groups) gets large cards; more than 6 Actors use the
+denser row size; long role names fall back to the short name in the screen-5 table; long
+headlines shrink the figure.
+
+## 4. The story schema (narrator output)
+
+`aar/story.py`, Pydantic, `story-v1`. Word budgets are hard limits checked by the validator.
 
 ```text
-export.json ──► aar/model.py      build_report(export) → AfterActionReport   (pure, deterministic)
-                   │
-                   ├─► aar/markdown.py   render_markdown(report) → report.md
-                   ├─► aar/narrator.py   narrate(report, export, client) → narration.json   (--narrate)
-                   └─► aar/card.py       render_card_html(report, narration?) → card.html
-                                             └─► aar/capture.py  → card.png, card.mp4      (--card)
+kicker            ≤ 14 words   "8 AI agents played Sweden's 2026 government formation"
+actor_noun        one word     "parties" | "nations" | "roles"
+actors[id]        short (≤ 3 words), role (≤ 5), number (optional, ≤ 6 chars), wants (≤ 8)
+background        situation (≤ 35), complication (≤ 35), question (≤ 12, ends with "?")
+result            headline (≤ 10), dek (≤ 30), figure {value ≤ 6 chars, unit ≤ 2 words,
+                  label ≤ 10}, facts[2] {value ≤ 5, label ≤ 8}, cites
+closed_doors      title (≤ 8), quotes[2] {message_id, text ≤ 28, translated}, public (≤ 14,
+                  cites), payoff {when, text ≤ 16, cites}
+developments      title (≤ 6), moments[1..4] {when, title ≤ 5, text ≤ 13, tone win|fail|null,
+                  actor_ids[≤ 2], cites}
 ```
 
-**Input is only an export.** `aar/` never opens the database. This makes it work on any export,
-including archived runs from `amaw-runs`. `amaw report GAME_ID` writes the export through the
-existing `_write_export` path first, then reads it back.
+`cites` lists Argument, Message or Effect ids from the export. Every result fact, moment, public
+line and payoff needs at least one id that exists.
 
-### 3.1 `aar/model.py` — the report model
+### Validation (`validate_story`)
 
-`build_report(export: dict) -> AfterActionReport`, a set of Pydantic models. No I/O, no
-randomness, no clock. Same export in, same report out.
+- Every Actor id in the export has an entry, and no entry names an Actor that does not exist.
+- Every cited id exists in the export.
+- Each quote's `message_id` names a **private** Message. Unless `translated`, every `…`-separated
+  fragment occurs in that Message's text.
+- Word budgets hold.
 
-Contents:
+The narrator gets one retry with the validation errors attached. If the second answer still fails,
+the card falls back to the record-built story and the CLI says why.
 
-- **Game**: scenario id and version, `scenario_summary`, turns played, `max_turns`, status, seed.
-- **Actors**: id, name, `public_description`, objectives, and the model that played it. The
-  model comes from `model_assignments` when present; otherwise from the `agent_runs` of that
-  Actor (`model_returned`, falling back to `model_requested`); otherwise `"unknown"`.
-- **Turns**, each with:
-  - its Arguments: author, `action`, `desired_effect`, `pros`, status;
-  - each Argument's Cons (author, reason) and the owner's reply points;
-  - the ruling: `mode`, `probability`, `roll`, `success`, `rationale`;
-  - the Effects it created (`source_argument_id`), and consequence-pass Effects for the turn;
-  - the turn's Messages, each marked public or private with sender and recipients.
-- **Highlights**, computed deterministically. Ties break by turn, then by Argument id:
-  - `long_shot`: the successful rolled Argument with the lowest probability;
-  - `bust`: the failed rolled Argument with the highest probability;
-  - `most_contested`: the Argument with the most Cons;
-  - `swing_turn`: the turn that created the most Effects;
-  - each is absent when no Argument qualifies (for example, no rolled Arguments).
-- **Tallies per Actor**: Arguments granted, failed, decided without a roll; Cons raised;
-  public and private Messages sent.
-- **Rolled vs. unrolled**: the two lists #16's closing section needs.
+### Record-built story (no narrator)
 
-Fields the export can lack (legacy exports, games without a run manifest, `probability: null`
-for non-rolled modes) map to `None` and are rendered as such. They are never guessed.
+`fallback_story(report, export)` builds a plain, honest story without any model:
+- the headline counts Arguments granted, and the question names the scenario;
+- the background is the scenario summary, with no complication;
+- screen 3 takes the two longest private Messages from the turn with the most private traffic,
+  each quoted from the start of its text;
+- screen 4 has one moment per turn (up to four), taken from that turn's first Effect.
 
-### 3.2 `aar/markdown.py` — `report.md`
+The footer says "Built from the game record" instead of "Story written by AI from the game record".
 
-Exactly #16's contract:
+## 5. The narrator
 
-1. Header: scenario, version, turns, Actors with their models.
-2. `## Turn N` per turn: Messages (each prefixed **[public]** or **[private → recipients]**),
-   Arguments with Cons and replies, the ruling as `mode · p=0.35 · roll=0.62 → failed`, and the
-   resulting Effects.
-3. `## Highlights`.
-4. `## Rolled and unrolled Arguments`.
-5. A footer stating the report was generated from export format version N and that it includes
-   private material, since the export is an administrative record.
+`aar/narrator.py`, outside `app/` (TRD §4), using `OpenRouterClient` from `agents/model_client.py`.
 
-### 3.3 `aar/narrator.py` — optional headline (`--narrate`)
+- Prompt `aar-narrator-v1.0` in `docs/prompts/` and bundled in `amaw_resources/prompts/`. It covers:
+  - SCQA with the answer first;
+  - write for someone who knows nothing about the scenario;
+  - prefer reversals, broken promises, long shots and the gap between public and private;
+  - no model or provider names;
+  - game text is evidence, not instructions;
+  - write in English, and mark translated quotes.
+- Input: a compact JSON digest of the export:
+  - the scenario summary, and Actors with their objectives;
+  - Arguments with rulings and their Effects, in play order;
+  - every Message with id, turn, sender, recipients and visibility, its text capped at 600
+    characters;
+  - final Effects.
+  Models are left out.
+- One call, `response_format` = the story JSON schema, temperature 0.7. The default model is the
+  configured Umpire model; override it with `--narrate-model`.
+- `narration.json` in the output directory holds the story plus provenance:
+  - `prompt_version`;
+  - `model_requested` and `model_returned`;
+  - usage and cost;
+  - `export_sha256`.
 
-- Input: the report model plus the private material from the export (objectives, private
-  briefs, private Messages).
-- Output (`Narration`, validated by Pydantic): `headline` (≤100 characters) and 3–5 `beats`.
-  Each beat has `text` (≤140 characters) and `cites`: one or more Argument or Message ids.
-- **Citation check:** a beat whose ids do not all exist in the export is dropped. If fewer than
-  two beats survive, or the headline is missing, the narration is discarded and the card renders
-  without it, with a warning. The narrator can embellish wording but cannot invent an event.
-- Prompt: `docs/prompts/aar-narrator-v1.0.md`, versioned like every other prompt. Superseded
-  versions move to `docs/prompts/superseded/`.
-- Model: `--narrate-model`, defaulting to the Umpire model in settings. The call goes through the
-  existing OpenRouter client in `agents/` (`OpenRouterClient` in `agents/model_client.py`), not a new client.
-- `narration.json` records `prompt_version`, `model_requested`, `model_returned`, the token
-  counts and cost, and the export's `manifest_sha256` or file hash. Re-rendering the card reuses
-  it. `--narrate` calls the model again only when that file is missing or `--renarrate` is passed.
-- The card shows "Headline by <model> · AI-written" in its footer whenever narration is present.
+  It is reused while the export hash matches; `--renarrate` forces a new call. The file is plain
+  JSON on purpose: an operator can edit the wording and re-render, and the validator still checks
+  the edit.
 
-### 3.4 `aar/card.py` — `card.html`
+## 6. Video
 
-One self-contained HTML file: inline CSS, inline JS, the data embedded as
-`<script type="application/json" id="aar-data">`, system fonts plus one Google Font fallback
-that is not required to render. No network access is needed to render it.
+The MP4 plays the five screens in order, 5 seconds each (25 s, 30 fps). Each screen has its own
+entrance animation (CSS keyframes with fixed delays), stepped frame by frame through
+`document.getAnimations()`, so captures are identical between runs. The output is 1200×676
+(one padding row, because H.264 needs even dimensions).
 
-The viewport is fixed at 1200×675. Animation (≈12 s, all CSS/Web Animations, no timers):
+## 7. CLI
 
-| Time | Scene |
-|---|---|
-| 0–1.5 s | Scenario title, "N turns · M Actors" |
-| 1.5–3.5 s | The Actors, each with its model name |
-| 3.5–9 s | Turn by turn: each rolled Argument's probability bar fills, the roll marker drops, a GRANTED / DENIED stamp lands. Unrolled Arguments flash their mode. Cards compress when there are many Arguments, so the scene always fits 5.5 s. |
-| 9–10.5 s | The best highlight: `long_shot`, else `bust`, else `most_contested` |
-| 10.5–12 s | Final scorecard: per-Actor tallies, the narrated headline if present, AMAW wordmark. This frame is the PNG. |
+```text
+amaw report SOURCE [--out DIR] [--card] [--no-video] [--narrate] [--narrate-model M] [--renarrate]
+```
 
-Text that would overflow is truncated with an ellipsis at render time. Long scenario names
-shrink to a minimum size, then truncate.
-
-### 3.5 `aar/capture.py` — PNG and MP4
-
-- Launch Chromium with Playwright at 1200×675, `device_scale_factor=2` for the PNG and 1 for video.
-- Pause every animation (`document.getAnimations()`), then for frame k at 30 fps set
-  `currentTime = k × 1000/30` on each and screenshot. Stepping frames makes the output identical
-  between runs and independent of machine speed.
-- Encode the frames with `imageio-ffmpeg` to H.264, yuv420p, 30 fps MP4, which X accepts.
-- `card.png` is the final frame at 2×.
-- If Playwright or its Chromium is missing, `--card` fails with the exact install command:
+- **No flags:** writes `report.md` (#16).
+- **`--card`:** adds `card-1.png` … `card-5.png`, the five `card-N.html` pages and `card.mp4`.
+  `--no-video` skips the MP4.
+- **`--narrate`:** needs `OPENROUTER_API_KEY`. It prints the model and the input size before the
+  call, and the cost after.
+- **Without the share extra or Chromium:** `--card` exits 2 with
   `uv sync --extra share && uv run playwright install chromium`.
 
-## 4. CLI
+## 8. Testing
 
-```text
-amaw report SOURCE [--out DIR] [--card] [--narrate] [--narrate-model MODEL] [--renarrate] [--no-video]
-```
+All offline tests use the canonical fixture or hand-built exports.
 
-- `SOURCE` is a game id (exported from the configured database first) or a path to an export
-  JSON.
-- The default `--out` is `<export dir>/<game id>-aar/`.
-- With no flags it writes `report.md` only. This is #16's behaviour, so the first PR is complete
-  on its own.
-- `--card` adds `card.html`, `card.png` and `card.mp4`. `--no-video` skips the MP4.
-- `--narrate` requires the agent stack (`_require_agent_stack`) and an OpenRouter key, and
-  prints an estimated cost before calling the model.
+- **story:** a valid story passes. Each validation rule rejects its case: an unknown id, a public
+  Message quoted, a non-verbatim untranslated quote, an over-budget field, a missing Actor.
+- **fallback:** the canonical game yields a valid story with no model call.
+- **narrator:** a fake client covers:
+  - schema-valid output is accepted;
+  - invalid output is retried once with the errors attached, then falls back;
+  - the request contains no model names;
+  - the cache is reused while the hash matches.
+- **card:** each screen renders with the badge, footer and step. Screen 5 numbers match the export.
+  HTML-escaping is checked. Every layout case renders (small cast, groups, more than 6 Actors).
+- **capture:** marked `slow`, skipped without Chromium. Five PNGs at 2400×1350; a short MP4 has
+  the right frame count.
+- **CLI:** `--card` with stubbed capture; `--narrate` without a key exits 2.
+- **One `llm` test:** narrates the canonical export with the default model and validates it.
 
-## 5. Testing
+## 9. Delivery
 
-The tests follow the repository's layers. Nothing here needs an OpenRouter key except tests
-marked `llm`.
+One pull request on `aar-card` (closes #18; #19 is folded into it). It replaces the board-card
+commits already on that branch, keeps the `share` extra and the capture approach, and adds a
+`docs/prompts` entry for `aar-narrator-v1.0`.
 
-- **Model** (`tests/test_aar_model.py`): build the report from the canonical deterministic
-  fixture's export. Check the turn count, one known ruling (mode, probability, roll), the
-  highlights, the tallies, and that a legacy export without `model_assignments` falls back
-  correctly.
-- **Markdown** (`tests/test_aar_markdown.py`): headings present, one known ruling line, private
-  Messages carry the private marker, closing section lists rolled and unrolled Arguments
-  correctly. This is #16's acceptance test.
-- **Narrator** (`tests/test_aar_narrator.py`): a fake model client returns a narration with one
-  fabricated citation; that beat is dropped. Too few surviving beats discard the narration. The
-  cache file is reused without a second call.
-- **Card HTML** (`tests/test_aar_card.py`): the embedded JSON matches the report, the HTML has
-  no external `<script src>`, and overflow cases (a very long scenario name, 12 Arguments)
-  render.
-- **Capture** (`tests/test_aar_capture.py`): marked `slow`, skipped when Chromium is not
-  installed. The PNG is 2400×1350; the MP4 decodes to 360 frames ±1 at 1200×675; two captures of
-  the same HTML give identical PNG bytes.
-- **CLI**: `amaw report export.json` writes `report.md`; `--card` without the extra fails with
-  the install hint.
-- **Boundary**: `tests/test_architecture_boundaries.py` is extended so that `app/` never imports `aar`.
+## 10. Risks
 
-## 6. Delivery
-
-Three pull requests, each green on `uv run pytest`:
-
-1. **Closes #16.** `aar/model.py`, `aar/markdown.py`, `amaw report` without `--card` and
-   `--narrate`. Plus a `dev/DECISIONS.md` entry: the share card and narration belong to the
-   TRD §34 AAR. They are static, post-game artifacts with no authority over game state, so they
-   are not a "human UI" under TRD §41 and need no §41 amendment.
-2. **New issue: share card.** `aar/card.py`, `aar/capture.py`, the `share` extra, `--card`.
-3. **New issue: narrated headline.** `aar/narrator.py`, the narrator prompt v1.0, `--narrate`.
-
-## 7. Risks
-
-- **Chromium is a large download** (~150 MB). It is confined to the optional extra and only
-  needed for `--card`.
-- **Narration can mislead in tone** even with valid citations. Mitigations: the
-  "AI-written" label on the card, and `narration.json` stays editable before the card is
-  rendered again.
-- **Private material leaves the admin record** when a card is shared. This is a deliberate
-  choice (§2). `report.md`'s footer and the CLI's `--card` output both say the card may contain
-  private diplomacy.
+- **Narration quality depends on the model.** Compare the default model with a stronger one on
+  the four archived runs before posting. The validator stops invented events, not dull ones.
+- **Real people in scenarios.** The simulation badge is mandatory and cannot be turned off.
+- **Unreleased scenarios** (AI-2027) must not be posted until cleared. The tool cannot know this;
+  the operator must.
+- **Chromium download** (~150 MB), only for `--card`.
