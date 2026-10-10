@@ -1925,8 +1925,8 @@ The observer view consists of:
 observer feed    read-only module outside app/ that joins the event log to the rows it
                  references; its item shapes are the admin export's
 terminal viewer  amaw watch <game_id>, and amaw run --watch; local only
-publisher        amaw publish <game_id>, and amaw run --publish; pushes the feed to a hosted
-                 read-only store for an external frontend
+publisher        amaw publish <game_id>, and amaw run --publish; pushes the feed over HTTPS
+                 to a relay the operator hosts, which serves an external frontend
 ```
 
 Rules:
@@ -1935,14 +1935,15 @@ Rules:
   metadata, and is never served through Actor-facing APIs or the visibility service's Actor paths.
 - It reads the game database through read-only connections. Neither consumer can change game
   state, and stopping or crashing either never affects a run or its export.
-- Publishing is opt-in for each run. The store's write credential stays on the machine that runs
-  the game and is never committed. The machine opens no inbound ports. Viewers of the hosted store
-  have read access only.
+- Publishing is opt-in for each run. The relay's ingest credential stays on the machine that runs
+  the game and is never committed. The machine opens no inbound ports. Viewers of the relay have
+  read access only.
 - Whether a scenario may be published is the operator's decision. A scenario package's rights
   note applies to published games exactly as it does to shared exports.
-- The external frontend and the hosted store are outside this repository and outside the engine.
-  The published schema is the contract between them and the publisher. Their realtime transport
-  and PostgreSQL storage do not bring WebSockets, SSE or PostgreSQL into the core above.
+- The relay and the external frontend are outside this repository and outside the engine. The
+  publisher's ingest format, which carries the feed's item shapes, is the contract between them.
+  The relay's PostgreSQL storage and SSE stream do not bring PostgreSQL or SSE into the core
+  above.
 
 The local browser workbench (D-106) is a separate amendment.
 

@@ -23,16 +23,19 @@ silent.
 **Date:** 2026-10-10 · **Status:** accepted · owner direction
 **Context:** The owner wants to follow a game as it runs, including private Messages, and replay
 it afterwards: in the terminal during `amaw run`, and in an external frontend (built in Lovable)
-fed from a hosted store. TRD §41 excludes advanced dashboards. D-106 plans only a local workbench
-on 127.0.0.1 with its frontend in `web/`, so data leaving the machine is not covered.
+fed from a server the owner runs on their own VPS. TRD §41 excludes advanced dashboards. D-106
+plans only a local workbench on 127.0.0.1 with its frontend in `web/`, so data leaving the machine
+is not covered.
 **Decision:** TRD §41.1 admits an observer view: a read-only feed outside `app/` whose items are
 the admin export's shapes, a terminal viewer (`amaw watch`, `amaw run --watch`) and an opt-in
-publisher (`amaw publish`) to a hosted read-only store (Supabase). It is administrative, never
-Actor-facing, and can never change game state or affect a run. The write credential stays local.
-The external frontend lives outside this repository, and the published schema is its contract.
-D-106 is unchanged: the local workbench stays a separate amendment (#1) and may reuse the feed.
+publisher (`amaw publish`) that pushes the feed over HTTPS to an operator-run relay (FastAPI and
+PostgreSQL on the owner's VPS, serving reads and an SSE stream). Supabase was considered and
+declined: the owner prefers to run the backend. The view is administrative, never Actor-facing,
+and can never change game state or affect a run. The ingest credential stays local. The relay
+(its own repository) and the frontend live outside this repository; the ingest format is their
+contract. D-106 is unchanged: the local workbench stays a separate amendment (#1) and may reuse the feed.
 **Consequence:** Published games expose every Actor's private material to whoever can read the
-store; publishing is per-run and the operator decides per scenario (`ai-2027` has a rights note).
+relay; publishing is per-run and the operator decides per scenario (`ai-2027` has a rights note).
 The feed reads the database from a second process, which raises the priority of WAL mode (#12).
 Work: #23 (feed), #24 (terminal viewer), #25 (publisher). The TRD moves to 0.7.0.
 
