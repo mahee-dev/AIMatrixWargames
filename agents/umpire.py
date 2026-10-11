@@ -578,6 +578,8 @@ class AIUmpire:
                 proposal = self._parse_completion(result.completion)
                 self._validate_context_supersession(context, proposal)
                 self._validate_effect_bound(proposal)
+                if attempt < last:
+                    self._validate_failure_establishes_something(proposal)
             except UmpireUnavailable as exc:
                 # `finish_reason` distinguishes a *truncated* completion (``length``) from
                 # genuinely malformed output; it is a safe provider enum, never model content.
@@ -661,6 +663,28 @@ class AIUmpire:
             raise _RetryableSemanticOutput(
                 f"effect_bound_exceeded: more than {bound} Effects in a branch",
                 code="effect_bound_exceeded",
+                offending_effect_ids=[],
+            )
+
+    @staticmethod
+    def _validate_failure_establishes_something(proposal: AdjudicationProposal) -> None:
+        """An automatic failure that establishes nothing on either branch is retried elsewhere.
+
+        That is how a provider answered when it ruled a complete Argument "not provided": a short
+        completion with no Effects at all (#45). Every genuine automatic failure on record
+        established at least one Effect, while an empty automatic success is a legitimate
+        self-binding reaffirmation and is left alone. §25 does not forbid an empty failure, so
+        the caller skips this check on the last attempt: it diversifies routing within the D-063
+        budget and never pauses a game by itself. The server's validation is unchanged.
+        """
+        if (
+            proposal.mode is AdjudicationMode.automatic_failure
+            and not proposal.success_effects
+            and not proposal.failure_effects
+        ):
+            raise _RetryableSemanticOutput(
+                "empty_automatic_failure: an automatic failure that establishes nothing",
+                code="empty_automatic_failure",
                 offending_effect_ids=[],
             )
 
