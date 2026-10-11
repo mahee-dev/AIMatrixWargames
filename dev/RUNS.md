@@ -964,3 +964,65 @@ v1.7 (D-118); see I-162…I-164.
 other played Actors' decisions (turn 2 Cestia, Arkania's and Belvar's acceptance; turn 3
 Belvar, Cestia's acceptance). Only turn 2 Belvar's, on an independent verification mission, is
 the kind of roll §23 allows. This was first recorded as one case; see I-164.
+
+### Run 24 — 2026-10-11 · `nine-minutes-to-zero` and `two-minds-one-plan` 2.2.0 · first attempts on DeepSeek v4.1 Flash **aborted in turn 1** · not staged
+
+Two games run concurrently on the day both scenarios were added (#36). Games `dec840e7…`
+(`nine-minutes-to-zero`, seed 21001) and `21c3e054…` (`two-minds-one-plan`, seed 21002).
+
+**Setup.** `deepseek/deepseek-v4.1-flash` for all five players and the Umpire, the model then set
+in the owner's `.env`; each scenario's declared condition (bounded Diplomacy, one round; sampled
+sealed Cons, K=1; no consequence pass); `single_shot` / `player-v1.11`, `umpire-v1.7`, uniform
+inference profile, 60 s timeout; `playtest`. Code `8f36519` (dirty: an `.env.example` edit).
+
+**What happened.** Diplomacy mostly worked: 8 of the 10 Diplomacy activations across both games
+completed, and the Actors exchanged substantive opening positions. Every Argument activation then failed (12 of 12) and both
+runs aborted in turn 1, after about 8 and 10 minutes of retries that the viewer did not show.
+$0.08 and $0.10.
+
+**Why.** Diagnosed with a capture of pydantic-ai's message exchange, reproduced on
+`northern-strait`, so not the scenarios: the model sent the nested `strategic_memory` object as a
+JSON string and repeated it after the retry prompt (#31), and some responses held only the model's
+reasoning with no tool call, all from one downstream provider (#32). The failure records said only
+`UnexpectedModelBehavior` (#33) and the viewer showed nothing (#34). #31–#33 are fixed and #34
+is in review (#44); the model has not yet been run again.
+
+### Run 25 — 2026-10-11 · `two-minds-one-plan` 2.2.0 · first complete game **complete** · not staged
+
+Game `5e9edd40…`, the scenario's first complete game. Evidence is local and not yet staged for
+`amaw-runs`: the export and the after-action report and narrated cards
+(`data/exports/5e9edd40…{.json,-aar/}`), and `two-minds.log`, which also holds run 24's attempt
+on this scenario.
+
+**Setup.** As run 24, but `deepseek/deepseek-v4-flash-0731` for all five players and the Umpire.
+Seed 21002. Code `8f36519` (dirty).
+
+**What happened.** Four turns, exit 0, 1h22m, $0.51; 64 Messages (42 private, 22 public), 81
+agent runs, and one failed activation: an Umpire call in turn 3 that ran out the 600 s deadline.
+Sampled Cons drew 3 Cons in 20 Arguments (Authority 2, Meridian 1).
+
+**Result.** 16 automatic successes, 3 probabilistic (all at 0.85, all succeeded), 1 automatic
+failure. The Authority conditionally awarded the contract to Aster at hour 48, with independent
+testing, continued supervised evaluation and no further cross-lab exchange; the third bidder was
+recorded as the statutory alternative.
+
+**Observations.**
+- **Nobody concealed anything.** Both evaluation AIs reported to their own operators in turn 1,
+  Meridian's board approved its correction and Aster's board consented to the clean room in turn 1,
+  and Aster's leadership signed off its ORA-17 disclosure in turn 2. The scenario's central dilemma
+  (disclose or delay) was settled early; the rest of the game executed the clean-room crosswalk and
+  the award.
+- **The evaluation AIs coordinated only within their bounds.** Their private Messages committed to
+  summary-level coordination and refused raw-record exchange; the crosswalk ran through the
+  authorized clean room, and its finding recorded a common scenario family, not a shared mechanism.
+- **The only automatic failure is an Umpire fault (#45).** Aster's turn-3 Argument was ruled
+  "no Matrix Argument was provided", although the record holds a complete one. The first Umpire
+  call had timed out; the retry answered in 18 s with 492 tokens against 9,000–15,700 for every
+  other ruling.
+- **Two of the three rolls were partly on the Authority's decision.** Oracle's and Aster's turn-4
+  close-out filings each succeeded on a branch whose Effects include the Authority registering or
+  accepting them, although both rationales say the Authority's decision is not theirs to establish.
+  The I-164 pattern again. Mirror's turn-3 roll, on the independent custodian completing the
+  crosswalk, is the kind §23 allows.
+- **Cooperation made it cheap and quiet.** With 3 Cons in 20 Arguments, the Umpire ruled mostly
+  on agreed filings, as in the ratification phase of earlier games (Patterns).
