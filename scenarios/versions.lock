@@ -39,3 +39,15 @@ svensk-regeringsbildning-2026:
     7.1.0:
       scenario_sha256: c3bff914614d052bf1365f3371430601fb02cc067a74ae7e12ac83c56e726fa8
       resources_sha256: 8c3a191953073e58e39f32a3a6e026697ac5e97d23f4c4090cdd0474b93df551
+nine-minutes-to-zero:
+  directory: nine-minutes-to-zero
+  versions:
+    2.2.0:
+      scenario_sha256: 16f2cd2af4183b85ecad0f3b35584badfa7a05f67b150ce055179a245b7c333a
+      resources_sha256: 806fd654b6d2340bd8e5db750a0dbe683223976ff688903ae250c05f0f20d385
+two-minds-one-plan:
+  directory: two-minds-one-plan
+  versions:
+    2.2.0:
+      scenario_sha256: 08bc7917318892f5abe89977a2837fe4532ef8f07a7af1d6a3ed56c21079d4d4
+      resources_sha256: bb21cbd2b18a05aee703841413b8418cc25ee9f53c41ff39a0a5bc068bc22287

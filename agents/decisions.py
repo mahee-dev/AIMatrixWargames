@@ -24,11 +24,12 @@ Three rules keep the server authoritative and the harness neutral:
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from agents.guardrails import (
     GuardrailConfig,
@@ -51,7 +52,28 @@ _ACTION_READY = "ready"
 
 
 class _Strict(BaseModel):
+    """Base for every decision object: extra fields are refused.
+
+    A decision object sent as a string containing a JSON object is decoded before validation,
+    then validated as strictly as the object form. Some models double-encode nested objects in
+    tool arguments and repeat it after the retry prompt; the content is what the schema asks for,
+    and rejecting it would measure a model's JSON escaping, not its play (#31, D-124). Any other
+    string still fails validation unchanged.
+    """
+
     model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _decode_json_object_string(cls, data: Any) -> Any:
+        if isinstance(data, str):
+            try:
+                decoded = json.loads(data)
+            except ValueError:
+                return data
+            if isinstance(decoded, dict):
+                return decoded
+        return data
 
 
 class OutgoingMessage(_Strict):

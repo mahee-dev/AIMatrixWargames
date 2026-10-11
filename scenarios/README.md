@@ -44,6 +44,20 @@ Scenario Portability acceptance scenario. It declares first-class `rules`, sched
 sampled Cons as its default condition. Its consequence model defaults to the Umpire's. It runs
 by name from the checkout and is not bundled into the wheel. See its `README.md`.
 
+## `nine-minutes-to-zero`
+
+Five Actors, three three-minute turns: a fictional strategic-warning crisis in which an AI
+attack warning, a neighbour's announced exercise and a neutral verification cell with partial
+coverage collide. The domain is bounded to leadership, readiness and communications. Bounded
+Diplomacy and sampled Cons are the default condition. Not a forecast. See its `README.md`.
+
+## `two-minds-one-plan`
+
+Five Actors, four twelve-hour turns: two rival labs' evaluation AIs hold complementary,
+proprietary safety evidence ahead of a fictional €1.8bn procurement decision, and must decide
+whether to share it, report it to their own operators, or trade assurances. Bounded Diplomacy
+and sampled Cons are the default condition. See its `README.md`.
+
 ## `ai-2027`
 
 Six Actors, four one-week turns, forking from the published

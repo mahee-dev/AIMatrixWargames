@@ -37,6 +37,21 @@ shapes and the publisher are unchanged; the viewer stays read-only and local.
 moves, the Umpire's model) are left out until the engine records them. TRD §41's exclusion of
 "advanced dashboards" still holds for anything beyond the §41.1 observer view.
 
+### D-124 — Single-shot decisions decode double-encoded JSON objects (#31)
+**Date:** 2026-10-11 · **Status:** accepted
+**Context:** `deepseek/deepseek-v4.1-flash` sends the nested `strategic_memory` object of the
+`decide` call as a string containing JSON, and repeats it after the retry prompt, so every
+Argument activation failed with `UnexpectedModelBehavior` (12 of 12, on `northern-strait` too).
+The content was exactly what the schema asks for.
+**Decision:** Every decision object (`_Strict` in `agents/decisions.py`) decodes a string that
+parses to a JSON object before validation, then validates it as strictly as the object form. Any
+other string fails as before. The JSON schema offered to the model is unchanged, so the tool
+schema version is unchanged.
+**Consequence:** The harness accepts one more wire encoding of the same decision. The decode is
+not counted as an invalid tool call, so a model that double-encodes is indistinguishable in the
+export from one that does not; that is intended, since the benchmark measures play, not escaping.
+Runs before this change that failed this way are not comparable to runs after it.
+
 ### D-123 — The game database runs in WAL journal mode (#12)
 **Date:** 2026-10-10 · **Status:** accepted
 **Context:** `engine_for_path` left SQLite in its default rollback journal, where a process
