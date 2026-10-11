@@ -156,3 +156,34 @@ def test_response_format_is_strict_and_closed() -> None:
                 walk(value)
 
     walk(copy.deepcopy(fmt["json_schema"]["schema"]))
+
+
+
+def test_response_format_allows_every_field_of_a_valid_story() -> None:
+    """A field that is merely *named* ``title`` is a real field, not schema metadata.
+
+    The strict schema closes every object, so a field it omits is one the model cannot send, and
+    the story then fails validation for lacking it. ``_strict`` stripped every ``title`` key, which
+    removed ``closed_doors.title``, ``developments.title`` and each moment's ``title``.
+    """
+    schema = response_format()["json_schema"]["schema"]
+
+    def object_branch(node: dict) -> dict:
+        if "anyOf" in node:
+            return next(branch for branch in node["anyOf"] if branch.get("type") == "object")
+        return node
+
+    def check(value: Any, node: dict, path: str) -> None:
+        if isinstance(value, dict):
+            node = object_branch(node)
+            missing = set(value) - set(node["properties"])
+            assert not missing, f"{path or 'story'}: schema omits {sorted(missing)}"
+            for key, item in value.items():
+                check(item, node["properties"][key], f"{path}.{key}".lstrip("."))
+        elif isinstance(value, list):
+            for item in value:
+                check(item, node.get("items", {}), f"{path}[]")
+
+    story = _story()
+    story.pop("schema_version", None)
+    check(story, schema, "")

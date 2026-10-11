@@ -34,6 +34,19 @@ sent with exclusions records them as `excluded_providers` in its usage record.
 unchanged; only routing differs, and the export shows where. Requests without exclusions are
 recorded exactly as before. A model whose every provider answers this way still fails.
 
+### D-126 — The narrator caps reasoning and repeats an empty answer from another provider
+**Date:** 2026-10-11 · **Status:** accepted
+**Context:** `amaw report --narrate` never produced a story. The strict schema dropped every field
+named `title`, so valid stories failed validation; reasoning tokens counted against the 6000-token
+cap, so DeepSeek returned empty or cut-off JSON; and one provider ignored the reasoning cap and
+returned nothing, which used up the only retry.
+**Decision:** The schema keeps fields named `title`. `max_tokens` is 16000 with
+`reasoning.max_tokens` 4000 inside it; a model whose endpoints refuse `reasoning` (404 under
+`require_parameters`) is asked again without it. An empty answer is repeated once with that
+provider excluded, as the Umpire does (D-061), before the fix-it retry.
+**Consequence:** A narration can take up to three calls instead of two. The narrator stays
+outside the benchmark, so no run condition changes.
+
 ### D-125 — The terminal viewer is a four-screen console that shows only recorded data (#38)
 **Date:** 2026-10-11 · **Status:** accepted
 **Context:** The owner asked for the `amaw watch` viewer (TRD §41.1) to become a command console
