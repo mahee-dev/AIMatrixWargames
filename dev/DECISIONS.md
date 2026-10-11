@@ -19,6 +19,24 @@ silent.
 
 ---
 
+### D-131 — The three largest modules are unwieldy and are split, by moves only (#50, #51, #52)
+**Date:** 2026-10-11 · **Status:** accepted
+**Context:** TRD §5 says to refactor when files become unwieldy, not before. Three modules now
+exceed 1,900 lines: `app/game_service.py` (2,364), `amaw_cli.py` (2,149) and `agents/player.py`
+(1,931). Each is already organised into sections that map onto separate concerns, so reviewing a
+change means paging through code it does not touch.
+**Decision:** A module over about 1,500 lines that holds more than one concern counts as
+unwieldy. The three are split, one pull request each, in this order: `amaw_cli.py` (#50),
+`app/game_service.py` (#51), then the supporting code in `agents/player.py` (#52). Each split
+only moves code: function bodies stay unchanged and public names are re-exported, so callers do
+not change. A test that monkeypatches a moved name is retargeted to the module where the name is
+looked up. Decomposing the long functions (`resolve_adjudication`, `make_argument`,
+`ReferencePlayer._build_agent` and `_activate`, the `run` and `benchmark` commands) is separate
+later work.
+**Consequence:** Each split keeps the test count of `main` and keeps `uv run mypy` clean, with
+new modules added to its `files` list. `agents/autonomous.py` (1,310) and `agents/umpire.py`
+(1,012) are below the threshold and stay as they are.
+
 ### D-130 — An automatic failure that establishes nothing is retried through another provider (#45)
 **Date:** 2026-10-11 · **Status:** accepted
 **Context:** In run 25 the Umpire ruled Aster's complete turn-3 Argument `automatic_failure` with
