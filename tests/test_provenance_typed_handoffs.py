@@ -26,6 +26,7 @@ from typer.testing import CliRunner
 import amaw_cli
 import amaw_contracts
 from amaw_contracts import canonical_json
+from tests.cli_helpers import isolate_settings
 
 REPO = Path(__file__).resolve().parents[1]
 FIXTURES = REPO / "tests" / "fixtures" / "i120"
@@ -69,9 +70,7 @@ def test_i120_002_derived_field_vocabulary_keeps_its_released_values() -> None:
 
 
 def _environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    for name in list(__import__("os").environ):
-        if name.startswith("AMAW_"):
-            monkeypatch.delenv(name)
+    isolate_settings(monkeypatch)
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
     monkeypatch.setenv("AMAW_DATABASE_PATH", str(tmp_path / "amaw.db"))
 

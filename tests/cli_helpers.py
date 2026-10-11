@@ -7,6 +7,7 @@ that record the options the CLI composed. Nothing reaches a provider or plays a 
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -15,15 +16,23 @@ from typer.testing import CliRunner
 
 import amaw_cli
 
-# Condition variables a developer shell may set; each test starts from the released defaults.
-_CONDITION_ENV = (
-    "AMAW_ADMIN_TOKEN",
-    "AMAW_CONSEQUENCE_MODE",
-    "AMAW_CONSEQUENCE_MODEL",
-    "AMAW_CON_REPLY_MODE",
-    "AMAW_REPLY_MAX_POINTS",
-    "AMAW_UMPIRE_PROMPT_VERSION",
-)
+# Prefixes of the variables ``Settings`` reads; a developer shell or ``.env`` may set any of them.
+_SETTINGS_ENV_PREFIXES = ("AMAW_", "OPENROUTER_")
+
+
+def isolate_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make ``Settings()`` resolve to the released defaults for the rest of the test.
+
+    Stops ``Settings`` reading the repository ``.env`` and removes every ``AMAW_*`` and
+    ``OPENROUTER_*`` variable, so a developer's key, model overrides or conditions cannot change
+    what the CLI composes. Tests set what they need afterwards.
+    """
+    from app.config import Settings
+
+    monkeypatch.setitem(Settings.model_config, "env_file", None)
+    for name in list(os.environ):
+        if name.startswith(_SETTINGS_ENV_PREFIXES):
+            monkeypatch.delenv(name)
 
 
 def capture_run_cli(
@@ -34,10 +43,9 @@ def capture_run_cli(
     Keys: ``umpire_options``, ``resolver_options``, ``runner_options`` and, with
     ``fake_player``, ``player_config``.
     """
+    isolate_settings(monkeypatch)
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
     monkeypatch.setenv("AMAW_DATABASE_PATH", str(tmp_path / "amaw.db"))
-    for name in _CONDITION_ENV:
-        monkeypatch.delenv(name, raising=False)
     captured: dict = {}
 
     class FakeAIUmpire:
