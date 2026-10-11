@@ -163,11 +163,23 @@ def watch(
     final: bool = typer.Option(
         False, "--final", help="Show a finished game's final frame instead of replaying it."
     ),
+    screen: str = typer.Option(
+        "live", "--screen",
+        help="Screen to open on: live, network, adjudication or world (keys 1-4 switch).",
+    ),
+    ascii_only: bool = typer.Option(
+        False, "--ascii", help="Draw with plain ASCII, for terminals without Unicode."
+    ),
 ) -> None:
     """Watch a game in the terminal: follow a running game or replay a finished one.
 
+    Four screens: 1 Live Command, 2 Actor Network, 3 Adjudication, 4 World State. Keys: f
+    focus the feed, a cycle the Actor filter, s private only, p pause drawing, arrows select,
+    enter inspects in full, esc closes, space or n steps a replay, ? help, q quits. Off a
+    terminal, one frame of the chosen screen is printed.
+
     The viewer reads the configured database read-only and shows every Actor's material,
-    private Messages included (TRD §41.1). Quitting never affects a run.
+    private Messages included (TRD §41.1). Quitting or pausing never affects a run.
     """
     from sqlalchemy.exc import OperationalError
 
@@ -176,14 +188,20 @@ def watch(
     from observer.feed import read_only_engine
     from observer.watch import watch as run_viewer
 
+    from observer.navigation import SCREENS
+
     try:
         parsed = uuid.UUID(game_id)
     except ValueError as exc:
         typer.echo(f"error: {game_id!r} is not a valid game id", err=True)
         raise typer.Exit(code=2) from exc
+    if screen not in SCREENS:
+        typer.echo(f"error: --screen must be one of {', '.join(SCREENS)}", err=True)
+        raise typer.Exit(code=2)
     engine = read_only_engine(Settings().database_path)
     try:
-        run_viewer(engine, parsed, replay=False if final else None, speed=speed, step=step)
+        run_viewer(engine, parsed, replay=False if final else None, speed=speed, step=step,
+                   screen=screen, ascii=True if ascii_only else None)
     except GameNotFound:
         typer.echo(f"error: no game {game_id}", err=True)
         raise typer.Exit(code=1) from None
@@ -491,7 +509,8 @@ PublishOpt = Annotated[bool, typer.Option(
 )]
 WatchOpt = Annotated[bool, typer.Option(
     "--watch",
-    help="Show the live terminal viewer while the game runs; logs go to --log-file.",
+    help="Show the live terminal console (keys 1-4 switch screens, q closes it and the run "
+         "carries on); logs go to --log-file.",
 )]
 StreamGameDetailsOpt = Annotated[bool | None, typer.Option(
     "--stream-game-details/--no-stream-game-details",

@@ -146,7 +146,7 @@ def test_a_frame_shows_position_actors_ruling_and_feed(played, reader) -> None:
     assert f"turn {state.turn}/" in frame
     for actor in state.actors:
         assert actor["name"] in frame
-    assert "last ruling" in frame and ("success" in frame or "failure" in frame)
+    assert "last ruling" in frame.lower() and ("SUCCESS" in frame or "FAILURE" in frame)
     assert "feed" in frame and "game complete" in frame
     assert "q quit" in frame
 
