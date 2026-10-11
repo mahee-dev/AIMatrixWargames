@@ -21,7 +21,7 @@ from agents.umpire import (
     AIUmpire,
     load_umpire_prompt,
 )
-from amaw_cli import _umpire_prompt_version
+from amaw_cli.conditions import _umpire_prompt_version
 from app.config import Settings
 from app.umpire import AdjudicationContext
 from tests.api_helpers import REPO_ROOT

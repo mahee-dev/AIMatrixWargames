@@ -19,7 +19,7 @@ def test_t066_release_inventory_and_version() -> None:
         "MANIFEST.in",
         "pyproject.toml",
         "uv.lock",
-        "amaw_cli.py",
+        "amaw_cli/__init__.py",
         "amaw_unattended.py",
         "app/export.py",
         "tests/test_integration_six_turn.py",
