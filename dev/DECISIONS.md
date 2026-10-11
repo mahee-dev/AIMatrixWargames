@@ -19,6 +19,22 @@ silent.
 
 ---
 
+### D-130 — An automatic failure that establishes nothing is retried through another provider (#45)
+**Date:** 2026-10-11 · **Status:** accepted
+**Context:** In run 25 the Umpire ruled Aster's complete turn-3 Argument `automatic_failure` with
+"No Matrix Argument was provided", after a first call had timed out. A Swedish-government game had
+the same ruling in Swedish against a complete Argument. Both came from one downstream provider,
+with far shorter output than any neighbouring ruling. Across 35 local games and 447 rulings, those
+two are the only automatic failures with no Effect on either branch; all 48 others establish one.
+Thirteen empty automatic successes are legitimate self-binding reaffirmations.
+**Decision:** The Umpire client treats an `automatic_failure` with no Effect on either branch as
+unusable output and retries it through a different provider within the D-063 attempts, under every
+prompt version. On the last attempt it accepts the answer, because agents.md §22 allows an empty
+failure. Recorded in agents.md §22 (0.3.13).
+**Consequence:** A wrong "empty" ruling from one provider is replaced by another provider's ruling
+at the cost of one more call. A genuine empty failure costs up to three extra calls and still
+stands. The server's validation and the prompts are unchanged.
+
 ### D-129 — The observer snapshot carries failed activations; the viewer shows the one holding the game (#34)
 **Date:** 2026-10-11 · **Status:** accepted
 **Context:** While an Actor's activations kept failing, `amaw watch` showed only "awaiting input"

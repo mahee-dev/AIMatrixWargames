@@ -1,6 +1,6 @@
 # AMAW Agent, Tool and Umpire Contract
 
-**Version:** 0.3.12 (D-114: §19/§21 `umpire-v1.7` is the default Umpire prompt for every game)  
+**Version:** 0.3.13 (D-130: §22 an empty automatic failure is retried through another provider)  
 **Status:** Normative for Lean MVP  
 **Aligned with:** `PRD.md`, `TRD.md`. Earlier versions of this contract are recorded in the decision log.
 
@@ -951,6 +951,11 @@ unusable output that it retries within its bounded attempts. The prompt also ask
 - supersede an active Effect when updating it, instead of adding a parallel one.
 
 The server's own per-branch limit is version-independent and unchanged.
+
+Under every prompt version, the Umpire client also treats an `automatic_failure` that establishes
+no Effect on either branch as unusable output, and retries it through a different provider within
+the same attempts (D-130). On the last attempt it accepts that answer: an empty failure is a legal
+proposal, so this check diversifies routing and never pauses a game by itself.
 
 `umpire-v1.7` (D-112) keeps v1.6's bound, schema and retry, and adds a branch audit that applies
 §23 to each branch the server could select. For every Effect in such a branch the Umpire asks
