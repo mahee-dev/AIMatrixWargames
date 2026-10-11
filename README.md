@@ -99,11 +99,22 @@ Every scenario in the checkout runs by name: `northern-strait`, `orison-crisis`,
 name lists the ones that work. A fifth scenario, `ai-2027`, is held back from the public
 repository until the authors of AI 2027 have agreed to its publication.
 
-To follow the game as it plays, add `--watch`: the terminal shows a live dashboard (turn and
-phase, each Actor, the last ruling with the Umpire's probability and the server's roll, and every
-Message, private ones included) while logs go to `data/logs/`. From another terminal,
-`uv run amaw watch GAME_ID` attaches to a running game or replays a finished one (`--speed`,
-`--step`); quitting the viewer never stops the run.
+To follow the game as it plays, add `--watch`: the terminal shows a live console while logs go
+to `data/logs/`. It has four screens, switched with keys `1`-`4`:
+
+| Key | Screen | Shows |
+|---|---|---|
+| `1` | Live Command | turn and phase pipeline, each Actor's state and whose input is due, the event feed, the last ruling, active Effects |
+| `2` | Actor Network | who sent private Messages to whom, public broadcasts per Actor, recent communications |
+| `3` | Adjudication | one Argument's lifecycle: Cons and passes, the owner's reply, the Umpire's probability, the server's roll, the Effects actually recorded |
+| `4` | World State | active and ended Effects, a timeline, scenario settings and models, event-derived counts |
+
+`f` focuses the feed, `a` cycles an Actor filter, `s` shows private material only, the arrow keys
+select, `enter` shows the selected item in full, `p` pauses drawing (never the game), `?` lists
+the keys and `q` quits. From another terminal, `uv run amaw watch GAME_ID` attaches to a running
+game or replays a finished one (`--speed`, `--step`, `--final`, `--screen`, `--ascii`); a replay
+shows each moment as it was known then. Quitting the viewer never stops the run. The viewer shows
+every Actor's private material: it is an operator's view, not an Actor's.
 
 To follow games from a browser, run the relay ([`amaw-relay`](https://github.com/mahee-dev/amaw-relay),
 FastAPI and PostgreSQL on your own server) and set `AMAW_RELAY_URL` and `AMAW_RELAY_TOKEN` in `.env`.

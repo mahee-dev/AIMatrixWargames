@@ -19,6 +19,24 @@ silent.
 
 ---
 
+### D-125 — The terminal viewer is a four-screen console that shows only recorded data (#38)
+**Date:** 2026-10-11 · **Status:** accepted
+**Context:** The owner asked for the `amaw watch` viewer (TRD §41.1) to become a command console
+modelled on a four-screen mock-up whose panels include tension and stability gauges, a region map,
+Actor goals and "next expected" actions. AMAW records none of these. Feed refs are joined when the
+feed is read, so an Effect's `active` flag or an Argument's `status` in a ref can be later than its
+event, and a snapshot's run totals describe the present.
+**Decision:** The viewer has four screens (Live Command, Actor Network, Adjudication, World State)
+over one incremental fold of the feed (`observer/viewstate.py`). It draws only recorded data:
+Effects are the world state, figures are counts from the event log, public broadcasts are counted
+per sender rather than drawn as directed links, and "awaiting input" never claims a model call is
+running. A replay takes lifecycle from events, never from refs, seeds the setup Effects that no
+event creates, and shows run totals only once it reaches the snapshot's cursor. The feed, its item
+shapes and the publisher are unchanged; the viewer stays read-only and local.
+**Consequence:** Mock-up panels with no authoritative source (gauges, maps, goals, predicted next
+moves, the Umpire's model) are left out until the engine records them. TRD §41's exclusion of
+"advanced dashboards" still holds for anything beyond the §41.1 observer view.
+
 ### D-124 — Single-shot decisions decode double-encoded JSON objects (#31)
 **Date:** 2026-10-11 · **Status:** accepted
 **Context:** `deepseek/deepseek-v4.1-flash` sends the nested `strategic_memory` object of the
