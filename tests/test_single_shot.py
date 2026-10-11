@@ -941,3 +941,102 @@ def test_the_export_carries_the_cause_without_the_content(db_engine: Engine) -> 
             for c in causes
         )
     assert MARKER not in json.dumps(failed, default=str)
+
+
+# --- empty responses exclude their downstream provider (#32) ---------------------------------
+
+
+def _routing_model(script: list) -> tuple:
+    """A FunctionModel that plays ``script`` in order and records each request's routing.
+
+    A script entry is either the string provider name of an empty, reasoning-only response or a
+    callable ``info -> parts`` for a usable one.
+    """
+    from pydantic_ai.messages import ThinkingPart
+    from pydantic_ai.models.function import FunctionModel
+
+    seen: list[list[str]] = []
+    calls = iter(script)
+
+    def run(messages, info: AgentInfo) -> ModelResponse:  # noqa: ANN001
+        provider = (info.model_settings or {}).get("openrouter_provider") or {}
+        seen.append(list(provider.get("ignore") or []))
+        step = next(calls)
+        if isinstance(step, str):
+            return ModelResponse(
+                parts=[ThinkingPart(content="Let me make the call.")],
+                provider_details={"downstream_provider": step, "finish_reason": "stop"},
+            )
+        return ModelResponse(parts=step(info), provider_details={"downstream_provider": "GoodCo"})
+
+    return FunctionModel(run), seen
+
+
+def _decide(info: AgentInfo) -> list:
+    return [decision_call(info, {
+        "messages": [{"recipients": [], "public": True, "text": "Opening statement."}],
+        "strategic_memory": _memory(), "ready": True,
+    })]
+
+
+def test_an_empty_response_excludes_its_provider_from_the_next_request(db_engine: Engine) -> None:
+    """A reasoning-only response is a provider failure: the output retry is routed elsewhere (#32).
+
+    deepseek-v4.1-flash served by one provider ended its turn with reasoning and no tool call;
+    the model sees the same retry prompt and budget, only the routing changes (as D-061 does for
+    the Umpire).
+    """
+    creation = seed(db_engine)
+    game_service.start_game(db_engine, creation.game_id)
+    model, seen = _routing_model(["BadCo", _decide])
+    player = _player(db_engine, creation, "arkania", model)
+
+    result = player.activate()
+
+    assert result.tool_call_names == ["send_message", "ready"]
+    assert seen == [[], ["BadCo"]]
+    requests = result.usage["request_usage"]
+    assert "excluded_providers" not in requests[0]
+    assert requests[1]["excluded_providers"] == ["BadCo"]
+
+
+def test_provider_exclusion_spans_the_activation_retry_and_accumulates(db_engine: Engine) -> None:
+    """Two empty answers exhaust the output retry; the activation retry keeps both exclusions."""
+    creation = seed(db_engine)
+    game_service.start_game(db_engine, creation.game_id)
+    model, seen = _routing_model(["BadCo", "OtherCo", _decide])
+    player = _player(db_engine, creation, "arkania", model)
+
+    result = player.activate()
+
+    assert result.tool_call_names == ["send_message", "ready"]
+    assert seen == [[], ["BadCo"], ["BadCo", "OtherCo"]]
+
+
+def test_a_new_activation_starts_with_no_exclusions(db_engine: Engine) -> None:
+    """Exclusions last for one activation; a later activation routes normally again."""
+    creation = seed(db_engine)
+    game_service.start_game(db_engine, creation.game_id)
+    def stay_open(info: AgentInfo) -> list:
+        return [decision_call(info, {"messages": [], "strategic_memory": _memory(), "ready": False})]
+
+    model, seen = _routing_model(["BadCo", stay_open, _decide])
+    player = _player(db_engine, creation, "arkania", model)
+
+    player.activate()
+    seen.clear()
+    player.activate()
+
+    assert seen == [[]]
+
+
+def test_a_usable_response_or_an_unnamed_provider_excludes_nothing(db_engine: Engine) -> None:
+    """Only a named downstream provider is excluded, never the gateway's own label."""
+    creation = seed(db_engine)
+    game_service.start_game(db_engine, creation.game_id)
+    model, seen = _routing_model(["openrouter", _decide])
+    player = _player(db_engine, creation, "arkania", model)
+
+    player.activate()
+
+    assert seen == [[], []]

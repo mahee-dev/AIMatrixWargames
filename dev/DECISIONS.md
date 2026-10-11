@@ -34,6 +34,21 @@ are never recorded.
 (strategic_memory: model_type)` instead of the bare type name. Exports gain the `causes` list on
 failure rows only. A cause cannot show what the model actually wrote; that still needs a capture.
 
+### D-127 — A player response with no text or tool call excludes its provider (#32)
+**Date:** 2026-10-11 · **Status:** accepted
+**Context:** With `deepseek/deepseek-v4.1-flash`, some single-shot activations failed with
+`Please include your response in a tool call.` twice. The captured responses were not prose:
+they held only the model's reasoning, ended with `finish=stop`, and came from one downstream
+provider. #32 asked whether a larger output-retry budget would change the run condition.
+**Decision:** The retry budget stays at one. The player's model wrapper treats a response with
+neither text nor a tool call as a provider failure and excludes that downstream provider
+(`openrouter_provider.ignore`) for the rest of the activation, across the output retry and the
+activation retry, as the Umpire does (D-061). The gateway's own label is never excluded. A request
+sent with exclusions records them as `excluded_providers` in its usage record.
+**Consequence:** The model sees the same conversation and retry budget, so the run condition is
+unchanged; only routing differs, and the export shows where. Requests without exclusions are
+recorded exactly as before. A model whose every provider answers this way still fails.
+
 ### D-126 — The narrator caps reasoning and repeats an empty answer from another provider
 **Date:** 2026-10-11 · **Status:** accepted
 **Context:** `amaw report --narrate` never produced a story. The strict schema dropped every field

@@ -285,6 +285,7 @@ class _TimedModel(WrapperModel):
         self._request_count = 0
         self._wait_seconds = 0.0
         self._request_usage: list[dict[str, Any]] = []
+        self._excluded_providers: list[str] = []
         self._topology = RequestTopologyProfiler()
 
     def reset_metrics(self) -> None:
@@ -292,6 +293,7 @@ class _TimedModel(WrapperModel):
             self._request_count = 0
             self._wait_seconds = 0.0
             self._request_usage = []
+            self._excluded_providers = []
             self._topology.reset()
 
     def metrics(self) -> tuple[int, float, list[dict[str, Any]], dict[str, Any]]:
@@ -312,6 +314,9 @@ class _TimedModel(WrapperModel):
         with self._metrics_lock:
             self._request_count += 1
             request_number = self._request_count
+            excluded = list(self._excluded_providers)
+            if excluded:
+                model_settings = _settings_ignoring_providers(model_settings, excluded)
             topology_record = self._topology.capture(
                 provider_messages,
                 model_settings,
@@ -335,8 +340,50 @@ class _TimedModel(WrapperModel):
                         request_number=request_number,
                         provider_details=response.provider_details,
                     )
+                    if excluded:
+                        usage["excluded_providers"] = excluded
                     self._request_usage.append(usage)
+                    self._exclude_if_unusable(response)
                     self._topology.attach_provider_usage(topology_record, usage)
+
+
+    def _exclude_if_unusable(self, response: Any) -> None:
+        """Route the rest of this activation away from a provider that returned nothing usable.
+
+        A response with neither text nor a tool call (reasoning only, or empty) is a provider
+        failure, not a decision: some providers end the turn after the model's reasoning. Later
+        requests of the same activation, including the output retry and the activation retry,
+        exclude that downstream provider. The model's conversation and retry budget are
+        unchanged, so the run condition is too; only routing differs, as for the Umpire (#32,
+        D-061). The gateway's own label is never excluded. Called with the metrics lock held.
+        """
+        if _has_usable_output(response):
+            return
+        provider = (response.provider_details or {}).get("downstream_provider")
+        if not isinstance(provider, str) or not provider or provider.casefold() == "openrouter":
+            return
+        if provider not in self._excluded_providers:
+            self._excluded_providers.append(provider)
+            logger.info("excluding provider %s after a response with no text or tool call", provider)
+
+
+def _has_usable_output(response: Any) -> bool:
+    for part in response.parts:
+        if isinstance(part, ToolCallPart):
+            return True
+        if isinstance(part, TextPart) and part.content.strip():
+            return True
+    return False
+
+
+def _settings_ignoring_providers(model_settings: Any, providers: list[str]) -> dict[str, Any]:
+    """A copy of ``model_settings`` whose OpenRouter routing also ignores ``providers``."""
+    settings = dict(model_settings or {})
+    routing = dict(settings.get("openrouter_provider") or {})
+    ignored = list(routing.get("ignore") or [])
+    routing["ignore"] = ignored + [p for p in providers if p not in ignored]
+    settings["openrouter_provider"] = routing
+    return settings
 
 
 def _usage_integer(usage: Any, *names: str) -> int:
