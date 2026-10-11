@@ -12,7 +12,11 @@ decides legality (agents.md §3/§11/§13/§16).
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+
+import pytest
+from pydantic import ValidationError
 
 from agents.decisions import (
     ArgumentDecision,
@@ -39,6 +43,59 @@ def test_decision_type_follows_available_actions() -> None:
     assert select_decision_type([*common, "send_message"]) is None
     assert select_decision_type(common) is None
     assert select_decision_type([]) is None
+
+
+# --- double-encoded object fields (#31) ------------------------------------------------------
+
+
+def test_decision_accepts_a_double_encoded_strategic_memory() -> None:
+    """A nested object sent as a JSON string validates to the object form (#31).
+
+    deepseek-v4.1-flash sends ``strategic_memory`` as ``"{\\"commitments_made\\": [...]}"`` and
+    repeats it after the retry prompt; the content is exactly what the schema asks for.
+    """
+    memory = _memory(commitments_made=["Endorse the charter if the text is circulated."])
+    as_object = DiplomacyDecision.model_validate(
+        {"messages": [_msg()], "strategic_memory": memory, "ready": True}
+    )
+    as_string = DiplomacyDecision.model_validate(
+        {"messages": [_msg()], "strategic_memory": json.dumps(memory), "ready": True}
+    )
+    assert as_string == as_object
+
+
+def test_decision_accepts_double_encoded_nested_objects_at_every_depth() -> None:
+    """The decode applies to every nested decision object, not only ``strategic_memory`` (#31)."""
+    argument = {"action": "Act.", "desired_effect": "Effect.", "pros": ["p"]}
+    as_object = ArgumentDecision.model_validate(
+        {"messages": [_msg()], "strategic_memory": _memory(), "argument": argument}
+    )
+    as_string = ArgumentDecision.model_validate({
+        "messages": [json.dumps(_msg())],
+        "strategic_memory": json.dumps(_memory()),
+        "argument": json.dumps(argument),
+    })
+    assert as_string == as_object
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["not json at all", json.dumps(["a", "list"]), json.dumps("a string"), "{broken json"],
+)
+def test_decision_still_rejects_strings_that_are_not_an_encoded_object(value: str) -> None:
+    """Only a string that parses to a JSON object is decoded; anything else fails as before (#31)."""
+    with pytest.raises(ValidationError) as excinfo:
+        DiplomacyDecision.model_validate({"messages": [], "strategic_memory": value, "ready": True})
+    assert excinfo.value.errors()[0]["loc"] == ("strategic_memory",)
+
+
+def test_decision_still_rejects_an_encoded_object_with_wrong_fields() -> None:
+    """Decoding does not relax the schema: the decoded object is validated strictly (#31)."""
+    with pytest.raises(ValidationError):
+        DiplomacyDecision.model_validate({
+            "messages": [], "ready": True,
+            "strategic_memory": json.dumps({**_memory(), "extra_field": "x"}),
+        })
 
 
 # --- validation reuses the guardrails --------------------------------------------------------
@@ -550,6 +607,27 @@ def test_single_shot_guardrail_breach_is_one_structured_retry(db_engine: Engine)
     assert "guardrail_message_too_long" in str(retries[0].content)
     assert result.tool_call_names == ["send_message", "ready"]
     assert [m["text"] for m in player.tools.read_messages().data["messages"]] == ["short"]
+
+
+def test_single_shot_double_encoded_memory_is_one_call_without_a_retry(db_engine: Engine) -> None:
+    """The captured v4.1-flash shape completes in one model call, with no invalid call (#31)."""
+    creation = seed(db_engine)
+    game_service.start_game(db_engine, creation.game_id)
+    memory = _memory(strategic_assessment="Hold.")
+
+    def policy(packet: dict, idx: int, info: AgentInfo) -> list:
+        return [decision_call(info, {
+            "messages": [{"recipients": [], "public": True, "text": "Opening statement."}],
+            "strategic_memory": json.dumps(memory), "ready": True,
+        })]
+
+    player = _player(db_engine, creation, "arkania", model_from_decision_policy(policy))
+    result = player.activate()
+
+    assert result.model_iterations == 1
+    assert result.invalid_tool_calls == 0
+    assert result.tool_call_names == ["send_message", "ready"]
+    assert result.decision["strategic_memory"] == memory
 
 
 def test_single_shot_research_then_decide_uses_retrieved_fact(db_engine: Engine) -> None:
