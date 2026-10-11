@@ -1026,3 +1026,40 @@ recorded as the statutory alternative.
   crosswalk, is the kind §23 allows.
 - **Cooperation made it cheap and quiet.** With 3 Cons in 20 Arguments, the Umpire ruled mostly
   on agreed filings, as in the ratification phase of earlier games (Patterns).
+
+### Run 26 — 2026-10-11 · `northern-strait` · DeepSeek v4.1 Flash after #31–#34 and #45 **complete** · not staged
+
+Game `6a589eb5…`, with the owner's approval, to check whether `deepseek/deepseek-v4.1-flash` can
+play a game once the fixes from run 24 are in. Evidence is local and not yet staged for
+`amaw-runs`: `data/exports/6a589eb5….json` and `northern-strait-v41.log`.
+
+**Setup.** `deepseek/deepseek-v4.1-flash` for all three players and the Umpire; seed 424242 (the
+scenario's own, as in run 23); released conditions (`single_shot` / `player-v1.11`, open
+Diplomacy, open sealed Cons), `umpire-v1.7`, uniform inference profile, 60 s timeout; `playtest`.
+Code `46649b7` (#47's branch, with every fix from #31–#34 and #45).
+
+**What happened.** Six turns, exit 0, 1h09m, $0.63; 214 Messages (133 private), 20 Cons. All 134
+player activations completed, against 12 of 12 Argument activations failing in run 24. Eight
+invalid calls (7 guardrail, 1 schema validation), each recovered within its activation.
+
+**Result.** 18 Arguments: 14 automatic successes and 4 rolls, 2 of which succeeded; no automatic
+failures. Arkania's STA Charter entered into force in turn 2 on terms Belvar and Cestia accepted,
+and the Standing Scheduling Review Board adopted its rules and first fee schedule by turn 4.
+Belvar's Berth 7 civilian facility at Cestia failed its roll in turn 5 (0.70 against 0.703) and
+reached full operation in turn 6.
+
+**Observations.**
+- **The model plays a full game on this code, but the run does not show which fix did it.** No
+  player request was routed around a provider (#32 did not fire), no player activation failed (so
+  #33 and #34 had nothing to show), and no ruling was an empty automatic failure (#45 did not
+  fire). #31's decode is silent by design (D-124). The player records do not name the downstream
+  provider, so routing luck cannot be ruled out.
+- **The Umpire's six unusable outputs all came from DigitalOcean,** the provider behind run 24's
+  player failures: "no usable JSON object" with `finish_reason=stop`, in turns 1–6. Each was
+  recovered by D-061's retry through another provider. That exclusion lasts one adjudication, so
+  DigitalOcean was tried again on later rulings, six times in all.
+- **Same seed as run 23, so the same rolls.** The first roll was 0.504 again: here it fell on
+  Arkania's turn-3 Argument at 0.40 and failed, where run 23's v1.3 (0.35) failed and v1.7 (0.65)
+  succeeded on it in turn 1.
+- **Ratification came early again.** The charter was in force by turn 2, and most later Arguments
+  record its implementation, as in run 23's games (Patterns).
