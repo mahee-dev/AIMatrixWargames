@@ -675,6 +675,37 @@ class ViewState:
         """
         return bool(self.totals) and (self.live or self.cursor >= self.snapshot_cursor)
 
+    def failures(self, actor_id: str) -> tuple[int, dict[str, Any] | None]:
+        """How many of ``actor_id``'s activations failed, and the latest failure.
+
+        Failed activations come from the snapshot, which is read now, so like the run totals a
+        replay shows them only once it has caught up with the snapshot (#34).
+        """
+        if not (self.live or self.cursor >= self.snapshot_cursor):
+            return 0, None
+        for actor in self.actors:
+            if actor["id"] == actor_id:
+                return int(actor.get("failed_activations") or 0), actor.get("last_failure")
+        return 0, None
+
+    def failure_holding(self, actor_id: str) -> dict[str, Any] | None:
+        """The failure the game is stuck behind for ``actor_id``, if any.
+
+        That is the Actor's latest failure when it is newer than the last event: the game still
+        needs this Actor's input and nothing has happened since the attempt failed. Whether the
+        runner is retrying or about to stop is not recorded, so this never says which.
+        """
+        count, last = self.failures(actor_id)
+        if not count or not last or self.status != "running":
+            return None
+        try:
+            at = datetime.fromisoformat(last["at"])
+        except (KeyError, TypeError, ValueError):
+            return None
+        if self.last_at is not None and at <= self.last_at:
+            return None
+        return last
+
     def actor_ids(self) -> list[str]:
         return [a["id"] for a in self.actors] or list(self.turn_order)
 

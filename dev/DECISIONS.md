@@ -19,6 +19,21 @@ silent.
 
 ---
 
+### D-129 — The observer snapshot carries failed activations; the viewer shows the one holding the game (#34)
+**Date:** 2026-10-11 · **Status:** accepted
+**Context:** While an Actor's activations kept failing, `amaw watch` showed only "awaiting input"
+for minutes and then the run aborted; the failures were visible only in the log file. Failed
+activations are `agent_runs` rows, not events, and D-125 keeps the feed's item shapes unchanged.
+**Decision:** The snapshot gives each Actor `failed_activations` and `last_failure` (`at`, `turn`,
+`phase`, `reason`), read from the same rows as the model-call totals and matching the export's
+`agent_errors`. Live Command marks the count on the Actor's card and, while the game waits on that
+Actor and the failure is newer than the last event, shows when it failed and the last link of its
+recorded cause. It never says a retry is running: the runner may be retrying or about to stop. As
+with run totals, a replay shows failures only once it reaches the snapshot's cursor. No feed lines
+are added, so the feed stays the event log.
+**Consequence:** The publisher's snapshot gains two fields under `amaw-observer-ingest-v1`. The
+change is additive, but a relay that rejects unknown snapshot fields must accept them.
+
 ### D-128 — A failed activation records its cause, never the model's content (#33)
 **Date:** 2026-10-11 · **Status:** accepted
 **Context:** A failed player activation was recorded as `UnexpectedModelBehavior` and nothing

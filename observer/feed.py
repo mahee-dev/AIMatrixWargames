@@ -7,7 +7,8 @@ An outside observer follows a game, live or after it ends, through two reads:
   shapes, so the feed and ``amaw export`` never disagree. Event payloads hold only ids; the
   observer needs the text, the Umpire's probability and the server's roll.
 * :func:`snapshot` returns where the game stands: turn, phase, the Actors, whom the game is
-  waiting on, the active Effects and the running model-call totals.
+  waiting on, the active Effects, the running model-call totals and each Actor's failed
+  activations.
 
 The view is administrative and omniscient: private Messages and every Actor's material are
 included, exactly as in the admin export, and nothing here goes through :mod:`app.visibility`
@@ -207,6 +208,21 @@ def _waiting_on(session: Session, game: Game, actor_ids: list[str]) -> list[str]
     return []
 
 
+def _failure(run: AgentRun) -> dict[str, Any]:
+    """A failed player activation as the snapshot reports it: when, where and why.
+
+    Failed activations are not events, so they never appear as feed items; the snapshot carries
+    them beside the model-call totals that come from the same rows, as the admin export carries
+    them in ``agent_errors`` (#34). ``reason`` is the recorded cause, never model output (D-128).
+    """
+    return {
+        "at": run.created_at.isoformat(),
+        "turn": run.turn,
+        "phase": run.phase,
+        "reason": run.failure_reason,
+    }
+
+
 def snapshot(engine: Engine, game_id: uuid.UUID) -> dict[str, Any]:
     """Where ``game_id`` stands now, read in one transaction with the feed's cursor."""
     with _read(engine) as session:
@@ -234,6 +250,8 @@ def snapshot(engine: Engine, game_id: uuid.UUID) -> dict[str, Any]:
         actor_rows = []
         for actor in actors:
             own_runs = [r for r in runs if r.actor_id == actor.id and r.role == "player"]
+            failed = sorted((r for r in own_runs if not r.completed),
+                            key=lambda r: (r.created_at, r.id or 0))
             actor_rows.append(
                 {
                     "id": actor.id,
@@ -244,6 +262,8 @@ def snapshot(engine: Engine, game_id: uuid.UUID) -> dict[str, Any]:
                     "cost_usd": sum(r.cost_usd or 0 for r in own_runs),
                     "input_tokens": sum(r.input_tokens for r in own_runs),
                     "output_tokens": sum(r.output_tokens for r in own_runs),
+                    "failed_activations": len(failed),
+                    "last_failure": _failure(failed[-1]) if failed else None,
                 }
             )
 
