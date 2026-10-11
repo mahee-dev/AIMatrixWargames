@@ -2,7 +2,8 @@
 
 Actors and whose input is due, the turn's phase pipeline, the event feed, the last ruling and
 the active Effects. "Awaiting input" means the persisted state needs that Actor's move; nothing
-records when a model call is running, so nothing here claims one is.
+records when a model call is running, so nothing here claims one is. A failed activation newer
+than the last event is shown under it with its recorded cause, without claiming a retry (#34).
 """
 
 from __future__ import annotations
@@ -73,6 +74,9 @@ def actors_panel(state: ViewState) -> RenderableType:
                 name.stylize("reverse", 2)
             if state.actor_filter == actor_id:
                 name.append(" ◂" if not state.ui.ascii else " <", style="bold cyan")
+            failed, _ = state.failures(actor_id)
+            if failed:
+                name.append(f"  {failed} failed", style=BAD)
             model = actor.get("model") or "model n/a"
             if stacked:
                 name.append(f"\n  {model}", style=MUTED)
@@ -125,6 +129,16 @@ def activity_lines(state: ViewState, width: int, *, strip: bool) -> list[Text]:
         else:
             who.append("none recorded", style="dim")
         lines.append(who)
+        for actor_id in pending:
+            failure = state.failure_holding(actor_id)
+            if failure is None:
+                continue
+            lines.append(Text(clip(f"{state.name(actor_id)} failed at "
+                                   f"{str(failure['at'])[11:19]}", width, g), style=BAD))
+            # The recorded cause reads "… A <- B (field: type)"; its last link says the most.
+            reason = str(failure.get("reason") or "").split(" <- ")[-1]
+            if reason:
+                lines.append(Text("  " + clip(reason, max(5, width - 2), g), style=MUTED))
 
     argument = state.argument()
     if argument is not None and argument.turn == state.turn and state.phase in (

@@ -189,6 +189,51 @@ def test_snapshot_names_who_the_game_waits_on(tmp_path) -> None:
     assert sorted(snapshot["waiting_on"]) == sorted(scenario.game.turn_order)
 
 
+def test_snapshot_counts_failed_activations_and_names_the_last(tmp_path) -> None:
+    """Failed player activations reach the snapshot, as they reach the export's agent_errors (#34).
+
+    They are not events, so the feed's items stay as they are; the snapshot carries them beside
+    the model-call totals, which come from the same rows.
+    """
+    from app.provenance import record_agent_run
+
+    engine = database.engine_for_path(tmp_path / "live.db")
+    database.initialize_database(engine)
+    scenario = scenarios.load_scenario(FIXTURE_DIR)
+    creation = scenarios.create_game_from_scenario(engine, scenario)
+    game_service.start_game(engine, creation.game_id)
+    actor = scenario.game.turn_order[0]
+    common = {
+        "role": "player", "actor_id": actor, "turn": 1, "model_requested": "m",
+        "prompt_version": "player-v1.11", "prompt_hash": "0" * 64, "model_parameters": {},
+        "agent_framework": "pydantic-ai", "tool_schema_version": "t", "input_tokens": 10,
+        "output_tokens": 1, "model_calls": 1, "tool_calls": 0, "invalid_tool_calls": 0,
+        "stalls": 0,
+    }
+    record_agent_run(engine, creation.game_id, **common, phase="diplomacy", completed=True)
+    record_agent_run(engine, creation.game_id, **common, phase="argument", completed=False,
+                     failure_reason="activation failed: UnexpectedModelBehavior <- ToolRetryError")
+    record_agent_run(engine, creation.game_id, **common, phase="argument", completed=False,
+                     failure_reason="activation failed: UnexpectedModelBehavior <- ValidationError"
+                                    " (strategic_memory: model_type)")
+    engine.dispose()
+
+    reader = observer.read_only_engine(tmp_path / "live.db")
+    try:
+        snapshot = observer.snapshot(reader, creation.game_id)
+    finally:
+        reader.dispose()
+
+    rows = {a["id"]: a for a in snapshot["actors"]}
+    assert rows[actor]["failed_activations"] == 2
+    last = rows[actor]["last_failure"]
+    assert last["turn"] == 1 and last["phase"] == "argument"
+    assert last["reason"].endswith("(strategic_memory: model_type)")
+    assert last["at"]  # ISO time, comparable with feed items' created_at
+    others = [a for a in snapshot["actors"] if a["id"] != actor]
+    assert all(a["failed_activations"] == 0 and a["last_failure"] is None for a in others)
+
+
 def test_feed_rejects_an_unknown_game(reader) -> None:
     with pytest.raises(game_service.GameNotFound):
         observer.feed(reader, uuid.uuid4())

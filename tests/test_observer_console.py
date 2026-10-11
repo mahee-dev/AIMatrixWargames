@@ -259,6 +259,77 @@ def test_live_command_shows_actors_models_and_whose_input_is_due() -> None:
     assert "thinking" not in text.lower() and "generating" not in text.lower()
 
 
+# --- failed activations (#34) -------------------------------------------------------------------
+
+REASON = "activation failed for 'south': UnexpectedModelBehavior <- ToolRetryError"
+
+
+def _failing(script: Script, at: str, count: int = 3) -> dict[str, Any]:
+    snapshot = script.snapshot(phase="diplomacy")
+    snapshot["waiting_on"] = ["south"]
+    for actor in snapshot["actors"]:
+        actor["failed_activations"], actor["last_failure"] = 0, None
+    south = next(a for a in snapshot["actors"] if a["id"] == "south")
+    south["failed_activations"] = count
+    south["last_failure"] = {"at": at, "turn": 1, "phase": "diplomacy", "reason": REASON}
+    return snapshot
+
+
+def _live(script: Script, snapshot: dict[str, Any]) -> ViewState:
+    state = ViewState(live=True)
+    state.take_snapshot(snapshot)
+    for item in script.items:
+        state.apply(item)
+    state.take_snapshot(snapshot)
+    return state
+
+
+def test_live_command_shows_a_failure_newer_than_the_last_event() -> None:
+    """While the game waits on an Actor whose last activation failed, the screen says so (#34).
+
+    It names when and why from the recorded failure, and never claims a retry is running: the
+    runner may be retrying or about to give up, and nothing records which.
+    """
+    script = Script(["north", "south", "east"])
+    script.start()
+    state = _live(script, _failing(script, at="2026-10-11T10:59:00"))
+    text = frame(state).lower()
+
+    assert "3 failed" in text
+    assert "south command failed at 10:59:00" in text
+    assert "toolretryerror" in text
+    assert "retrying" not in text
+
+
+def test_a_failure_older_than_the_last_event_is_not_the_current_hold() -> None:
+    """The game moved on after the failure: the count stays, the waiting notice does not."""
+    script = Script(["north", "south", "east"])
+    script.start()
+    state = _live(script, _failing(script, at="2026-10-11T09:00:00"))
+    text = frame(state).lower()
+
+    assert "3 failed" in text
+    assert "failed at" not in text
+
+
+def test_a_replay_shows_failures_only_once_it_reaches_the_snapshot() -> None:
+    """Failures describe the present, like run totals, so an early replay frame omits them."""
+    script = Script(["north", "south", "east"])
+    script.start()
+    script.message("north", ["south"], "Hello.")
+    snapshot = _failing(script, at="2026-10-11T10:59:00")
+    early = ViewState(live=False)
+    early.take_snapshot(snapshot)
+    early.apply(script.items[0])
+    assert "failed" not in frame(early).lower()
+
+    late = ViewState(live=False)
+    late.take_snapshot(snapshot)
+    for item in script.items:
+        late.apply(item)
+    assert "3 failed" in frame(late).lower()
+
+
 def test_live_pipeline_follows_the_phases(game) -> None:
     snapshot, items = game
     state = replayed(snapshot, items, index_of(items, "phase_started", phase="cons") + 1)
