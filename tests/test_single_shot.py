@@ -362,6 +362,7 @@ from pydantic_ai.models.function import AgentInfo
 from agents.autonomous import AutonomousGameError, AutonomousGameRunner
 from agents.lifecycle import LifecycleRunner
 from agents.player import (
+    ActivationFailed,
     PLAYER_PROMPT_VERSION,
     PLAYER_PROMPT_VERSIONS,
     PlayerConfig,
@@ -836,3 +837,107 @@ def test_mixed_activation_modes_in_one_game_are_refused(db_engine: Engine) -> No
     # I-083: refused through the one shared-condition projection, which names the fields.
     with pytest.raises(AutonomousGameError, match="activation_mode.*prompt_version"):
         runner.run()
+
+
+# --- the failure record names the cause, never the content (#33) ------------------------------
+
+MARKER = "PRIVATE-PLAN-7Q"
+
+
+def _failing_player(db_engine: Engine, policy, **config) -> ReferencePlayer:
+    from tests.agent_fakes import model_from_decision_policy as _from_policy
+
+    creation = seed(db_engine)
+    game_service.start_game(db_engine, creation.game_id)
+    return _player(db_engine, creation, "arkania", _from_policy(policy), **config)
+
+
+def _failure(player: ReferencePlayer) -> ActivationFailed:
+    with pytest.raises(ActivationFailed) as excinfo:
+        player.activate()
+    return excinfo.value
+
+
+def _assert_no_content(failure: ActivationFailed) -> None:
+    assert MARKER not in failure.detail
+    assert MARKER not in json.dumps(failure.counts, default=str)
+
+
+def test_a_validation_failure_records_field_and_error_type(db_engine: Engine) -> None:
+    """The record says which field failed and how, for every attempt, without its value (#33)."""
+
+    def policy(packet: dict, idx: int, info: AgentInfo) -> list:
+        return [decision_call(info, {
+            "messages": [], "ready": True, "strategic_memory": f"not an object {MARKER}",
+        })]
+
+    failure = _failure(_failing_player(db_engine, policy))
+
+    assert "ValidationError" in failure.detail and "strategic_memory" in failure.detail
+    causes = failure.counts["causes"]
+    assert len(causes) == 2  # the first attempt's cause is kept, not only the last
+    for cause in causes:
+        assert cause["exception_chain"][:2] == ["UnexpectedModelBehavior", "ValidationError"]
+        assert cause["message"] == "Exceeded maximum output retries (1)"
+        assert cause["validation_errors"] == [{"loc": "strategic_memory", "type": "model_type"}]
+    _assert_no_content(failure)
+
+
+def test_a_response_without_a_tool_call_records_the_retry_prompt(db_engine: Engine) -> None:
+    from pydantic_ai.messages import TextPart, ThinkingPart
+
+    def policy(packet: dict, idx: int, info: AgentInfo) -> list:
+        return [ThinkingPart(content=f"I will call the tool {MARKER}"), TextPart(content="")]
+
+    failure = _failure(_failing_player(db_engine, policy))
+
+    cause = failure.counts["causes"][-1]
+    assert cause["exception_chain"][:2] == ["UnexpectedModelBehavior", "ToolRetryError"]
+    assert cause["retry_prompt"] == "Please include your response in a tool call."
+    assert "validation_errors" not in cause
+    _assert_no_content(failure)
+
+
+def test_a_guardrail_failure_records_only_its_code(db_engine: Engine) -> None:
+    def policy(packet: dict, idx: int, info: AgentInfo) -> list:
+        return [decision_call(info, {
+            "messages": [{"recipients": [], "public": True, "text": MARKER * 10}],
+            "strategic_memory": _memory(), "ready": True,
+        })]
+
+    failure = _failure(_failing_player(
+        db_engine, policy, guardrails=GuardrailConfig(max_message_chars=20)
+    ))
+
+    cause = failure.counts["causes"][-1]
+    assert cause["retry_prompt"] == {"code": "guardrail_message_too_long"}
+    assert "guardrail_message_too_long" in failure.detail
+    _assert_no_content(failure)
+
+
+def test_the_export_carries_the_cause_without_the_content(db_engine: Engine) -> None:
+    """Failure rows in the administrative export name the failing field for every attempt (#33)."""
+
+    def bad_memory(packet: dict, idx: int, info: AgentInfo) -> list:
+        return [decision_call(info, {
+            "messages": [], "ready": True, "strategic_memory": f"not an object {MARKER}",
+        })]
+
+    runner = AutonomousGameRunner(
+        _autonomous_client(db_engine), admin_token=ADMIN_TOKEN, scenario=FIXTURE_DIR,
+        player_factory=_single_shot_factory(bad_memory), seed=7, max_cycles=50,
+    )
+    with pytest.raises(AutonomousGameError):
+        runner.run()
+    export = runner._admin_request("GET", f"/admin/games/{runner.last_game_id}/export")
+
+    failed = [row for row in export["agent_runs"] if row["failure_reason"] is not None]
+    assert failed
+    for row in failed:
+        assert "strategic_memory: model_type" in row["failure_reason"]
+        causes = row["provider_metadata"]["counts"]["causes"]
+        assert causes and all(
+            {"loc": "strategic_memory", "type": "model_type"} in c["validation_errors"]
+            for c in causes
+        )
+    assert MARKER not in json.dumps(failed, default=str)

@@ -19,6 +19,21 @@ silent.
 
 ---
 
+### D-128 — A failed activation records its cause, never the model's content (#33)
+**Date:** 2026-10-11 · **Status:** accepted
+**Context:** A failed player activation was recorded as `UnexpectedModelBehavior` and nothing
+more, so telling a model that double-encodes objects (#31) from one that never calls the decision
+tool (#32) took a capture harness outside the repository.
+**Decision:** Each attempt's cause goes into the failure's `counts.causes` (exported under
+`agent_runs.provider_metadata.counts`), and the last attempt's also into `failure_reason`. A cause holds
+the exception types down the chain, the framework's own message, each validation error's field
+path and type, and a retry prompt: a guardrail retry reduced to its code, other retry text clipped
+to 160 characters. Rejected values, validation `msg` texts that can echo them, and model output
+are never recorded.
+**Consequence:** `failure_reason` reads e.g. `UnexpectedModelBehavior <- ValidationError
+(strategic_memory: model_type)` instead of the bare type name. Exports gain the `causes` list on
+failure rows only. A cause cannot show what the model actually wrote; that still needs a capture.
+
 ### D-126 — The narrator caps reasoning and repeats an empty answer from another provider
 **Date:** 2026-10-11 · **Status:** accepted
 **Context:** `amaw report --narrate` never produced a story. The strict schema dropped every field

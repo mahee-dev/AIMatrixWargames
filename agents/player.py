@@ -42,14 +42,17 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any
 
 import httpx
+from pydantic import ValidationError
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import (
     ModelAPIError,
     ModelHTTPError,
+    ModelRetry,
+    ToolRetryError,
     UnexpectedModelBehavior,
     UsageLimitExceeded,
 )
@@ -830,6 +833,75 @@ def _payload(result: ToolResult) -> dict[str, Any]:
             "details": result.error_details,
         },
     }
+
+
+_CAUSE_CHAIN_LIMIT = 5
+_CAUSE_ERRORS_LIMIT = 10
+_CAUSE_TEXT_CHARS = 160
+
+
+def _failure_cause(exc: BaseException) -> dict[str, Any]:
+    """Why one attempt failed, in a form safe for the failure record and the export.
+
+    The record names the cause, never the content: the exception types down the chain, the
+    framework's own message, and for validation errors only each field path and error type.
+    Rejected values, ``msg`` texts that can echo them, and the model's output are left out,
+    because failure records reach exports that may be shared beyond the Actor's own material.
+    A guardrail retry keeps only its code. An operator can then tell, from the export alone, a
+    model that double-encodes objects from one that never calls the decision tool (#33).
+    """
+    chain: list[BaseException] = []
+    current: BaseException | None = exc
+    while current is not None and len(chain) < _CAUSE_CHAIN_LIMIT and current not in chain:
+        chain.append(current)
+        current = current.__cause__ or current.__context__
+    cause: dict[str, Any] = {"exception_chain": [type(item).__name__ for item in chain]}
+    if isinstance(exc, UnexpectedModelBehavior):
+        cause["message"] = exc.message[:_CAUSE_TEXT_CHARS]
+    errors: list[dict[str, str]] = []
+    for item in chain:
+        if isinstance(item, ValidationError):
+            errors.extend(_error_locations(item.errors()))
+        elif isinstance(item, ToolRetryError):
+            content = item.tool_retry.content
+            if isinstance(content, str):
+                cause["retry_prompt"] = _retry_prompt_summary(content)
+            else:
+                errors.extend(_error_locations(content))
+        elif isinstance(item, ModelRetry):
+            cause["retry_prompt"] = _retry_prompt_summary(item.message)
+    if errors:
+        cause["validation_errors"] = errors[:_CAUSE_ERRORS_LIMIT]
+    return cause
+
+
+def _error_locations(errors: Iterable[Any]) -> list[dict[str, str]]:
+    return [
+        {"loc": ".".join(str(part) for part in error.get("loc", ())), "type": str(error.get("type"))}
+        for error in errors
+    ]
+
+
+def _retry_prompt_summary(content: str) -> Any:
+    """A guardrail retry is reduced to its code; other retry text is the framework's, clipped."""
+    try:
+        payload = json.loads(content)
+    except ValueError:
+        return content[:_CAUSE_TEXT_CHARS]
+    code = (payload.get("error") or {}).get("code") if isinstance(payload, dict) else None
+    return {"code": code} if isinstance(code, str) else {"code": None}
+
+
+def _cause_summary(cause: dict[str, Any]) -> str:
+    """One line for the failure reason: the chain, then the first field or retry code."""
+    text = " <- ".join(cause["exception_chain"])
+    errors = cause.get("validation_errors")
+    prompt = cause.get("retry_prompt")
+    if errors:
+        text += f" ({errors[0]['loc']}: {errors[0]['type']})"
+    elif isinstance(prompt, dict) and prompt.get("code"):
+        text += f" ({prompt['code']})"
+    return text
 
 
 def _classify_activation_error(exc: BaseException) -> str:
@@ -1627,6 +1699,7 @@ class ReferencePlayer:
             if output is not None:
                 run_kwargs["output_type"] = output
         activation_started = time.perf_counter()
+        causes: list[dict[str, Any]] = []
         for attempt in range(2):
             try:
                 # Deliberately no message_history — ephemeral, bounded context every time.
@@ -1639,11 +1712,12 @@ class ReferencePlayer:
                 ) from exc
             except Exception as exc:  # a model/network failure raised by the run
                 category = _classify_activation_error(exc)
+                causes.append(_failure_cause(exc))
                 if category == FAIL_TRANSIENT and attempt == 0:
                     logger.info(
                         "transient activation failure for %s (%s) — retrying once",
                         self._actor_id,
-                        type(exc).__name__,
+                        _cause_summary(causes[-1]),
                     )
                     # The retry is still the same logical activation. Re-read the same durable
                     # pending delivery so the packet exposes capacity remaining after any sends
@@ -1681,10 +1755,11 @@ class ReferencePlayer:
                     self._model.metrics()
                 )
                 raise ActivationFailed(
-                    f"activation failed for {self._actor_id!r}: {type(exc).__name__}",
+                    f"activation failed for {self._actor_id!r}: {_cause_summary(causes[-1])}",
                     category=category,
                     counts={
                         "attempts": attempt + 1,
+                        "causes": causes,
                         "model_calls": model_iterations,
                         "provider_wait_ms": round(provider_wait * 1000),
                         "activation_wall_ms": round(
