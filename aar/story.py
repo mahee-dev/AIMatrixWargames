@@ -208,7 +208,11 @@ def _strict(node: Any, defs: dict[str, Any]) -> Any:
         return node
     if "$ref" in node:
         return _strict(defs[node["$ref"].split("/")[-1]], defs)
+    # ``title`` and ``default`` are dropped as schema annotations only. Inside ``properties`` the
+    # keys are field names, and a field called ``title`` must stay, or the closed object forbids it.
     out = {k: _strict(v, defs) for k, v in node.items() if k not in {"title", "default", "$defs"}}
+    if isinstance(node.get("properties"), dict):
+        out["properties"] = {k: _strict(v, defs) for k, v in node["properties"].items()}
     if out.get("type") == "object" and "properties" in out:
         out["additionalProperties"] = False
         out["required"] = list(out["properties"])
