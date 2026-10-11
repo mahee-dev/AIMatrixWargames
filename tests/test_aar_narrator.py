@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 
-from agents.model_client import ModelConfig, ModelResult
+from agents.model_client import ModelClientError, ModelConfig, ModelResult, ProviderErrorCategory
 from aar.model import build_report
 from aar.narrator import NARRATOR_PROMPT_VERSION, load_or_narrate, narrate, narrator_input
 from tests.test_aar_story import _export, _story
@@ -47,6 +47,87 @@ def test_a_valid_answer_is_accepted_first_time() -> None:
     assert outcome.errors == [] and len(client.calls) == 1
     config = client.calls[0][1]
     assert config.extra_body["response_format"]["json_schema"]["strict"] is True
+
+
+
+def test_reasoning_has_its_own_budget_inside_the_output_cap() -> None:
+    """Reasoning tokens count against ``max_tokens``; capping them leaves room for the story.
+
+    With one 6000-token cap, deepseek-v4-flash-0731 spent all 6000 on reasoning and returned an
+    empty answer; uncapped at 16000 it reasoned past the call deadline.
+    """
+    client = FakeClient(_model_story())
+    _narrated(client)
+    config = client.calls[0][1]
+    reasoning = config.extra_body["reasoning"]["max_tokens"]
+    assert config.max_tokens >= 16000
+    assert config.max_tokens - reasoning >= 6000
+
+
+
+class NoReasoningClient(FakeClient):
+    """A model with no endpoint that accepts ``reasoning``: OpenRouter answers 404."""
+
+    def complete(self, messages: list[dict[str, Any]], *, config: ModelConfig, max_attempts: int = 2) -> ModelResult:
+        if "reasoning" in config.extra_body:
+            self.calls.append((messages, config))
+            raise ModelClientError("provider returned 404", category=ProviderErrorCategory.UNSUPPORTED_MODEL)
+        return super().complete(messages, config=config, max_attempts=max_attempts)
+
+
+def test_a_model_without_reasoning_support_is_asked_again_without_the_cap() -> None:
+    """``require_parameters`` makes OpenRouter refuse ``reasoning`` for a non-reasoning model.
+
+    The narrator then repeats the call once without it, so the reasoning cap never locks a model
+    out of narration.
+    """
+    client = NoReasoningClient(_model_story())
+    outcome = _narrated(client)
+    assert outcome.story is not None and outcome.errors == []
+    assert ["reasoning" in config.extra_body for _, config in client.calls] == [True, False]
+    assert client.calls[1][1].max_tokens == client.calls[0][1].max_tokens
+
+
+def test_a_404_with_no_reasoning_to_drop_still_fails() -> None:
+    """Only the ``reasoning`` refusal is recovered; a genuinely unknown model still raises."""
+
+    class Unknown(FakeClient):
+        def complete(self, messages, *, config, max_attempts=2):  # noqa: ANN001, ANN202
+            self.calls.append((messages, config))
+            raise ModelClientError("provider returned 404", category=ProviderErrorCategory.UNSUPPORTED_MODEL)
+
+    client = Unknown()
+    with pytest.raises(ModelClientError):
+        _narrated(client)
+    assert ["reasoning" in config.extra_body for _, config in client.calls] == [True, False]
+
+
+
+def test_an_empty_answer_is_asked_again_from_another_provider() -> None:
+    """A provider that returns no content does not use up the retry meant for fixing the story.
+
+    deepseek-v4-flash-0731 served by one provider ignored the reasoning cap and returned an empty
+    answer; the narrator repeats the call with that provider excluded, as the Umpire does.
+    """
+    client = FakeClient("", _model_story())
+    outcome = _narrated(client)
+    assert outcome.story is not None and outcome.errors == []
+    assert len(client.calls) == 2 and len(outcome.usage) == 2
+    assert client.calls[1][1].extra_body["provider"]["ignore"] == ["fake"]
+    assert client.calls[1][1].extra_body["provider"]["require_parameters"] is True
+
+
+def test_an_empty_answer_leaves_the_fix_it_retry_in_place() -> None:
+    client = FakeClient("", "not json", _model_story())
+    outcome = _narrated(client)
+    assert outcome.story is not None and len(client.calls) == 3
+    assert "Your story breaks these rules" in client.calls[2][0][-1]["content"]
+
+
+def test_only_one_empty_answer_is_forgiven() -> None:
+    client = FakeClient("", "", "")
+    outcome = _narrated(client)
+    assert outcome.story is None and len(client.calls) == 3
 
 
 def test_an_invalid_answer_is_retried_once_with_the_errors() -> None:
