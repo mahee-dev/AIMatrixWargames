@@ -113,6 +113,7 @@ def test_card_writes_five_screens_and_one_video(
     assert calls == [f"card-{n}.png" for n in range(1, 6)]
 
 
+@pytest.mark.usefixtures("isolated_settings")
 def test_narrate_needs_a_key(tmp_path: Path, canonical_export: dict) -> None:
     result = CliRunner().invoke(
         amaw_cli.app, ["report", str(_export_file(tmp_path, canonical_export)), "--card", "--narrate"]

@@ -32,6 +32,18 @@ def _hermetic_env(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatc
 
 
 @pytest.fixture
+def isolated_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``Settings()`` ignores the repository ``.env`` and every ``AMAW_*``/``OPENROUTER_*`` variable.
+
+    For tests whose expected output depends on the released defaults, such as "no key is
+    configured" or a byte-identical hand-off.
+    """
+    from tests.cli_helpers import isolate_settings
+
+    isolate_settings(monkeypatch)
+
+
+@pytest.fixture
 def db_path(tmp_path: Path) -> Path:
     """A unique on-disk SQLite path for a single test (auto-removed with ``tmp_path``)."""
     return tmp_path / "amaw-test.db"
