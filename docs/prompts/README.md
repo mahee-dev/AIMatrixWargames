@@ -16,7 +16,7 @@ Since D-048 the player prompts come in pairs: an even minor version for the `too
 activation mode, the following odd one for `single_shot` (D-046). Since D-060 there is a
 second pair for the `visible_reply` Con-reply treatment. Since D-096 a scenario that declares `rules` runs the rules-aware `umpire-v1.6` (D-090 introduced
 `umpire-v1.5`, which stays selectable). Since D-114 every game defaults to `umpire-v1.7`
-(D-112); v1.3–v1.6 stay selectable. `agents/player.py`
+(D-112); v1.3–v1.6 stay selectable. `agents/player_config.py`
 (`PLAYER_PROMPT_VERSIONS`, `REPLY_PLAYER_PROMPT_VERSIONS`) and `agents/umpire.py`
 (`UMPIRE_PROMPT_VERSIONS`) are authoritative; `tests/test_release_readiness.py` checks
 this table against them.
