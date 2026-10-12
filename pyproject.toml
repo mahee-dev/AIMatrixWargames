@@ -68,13 +68,13 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 # Flat layout: the code packages sit at the repository root (TRD §5). ``amaw_resources`` is the
 # deliberately small runtime-data namespace; maintainer docs and archived scenarios stay out.
+# The CLI is its own package, outside the engine packages, so the `app/` import boundary holds
+# as it grows.
 packages = [
     "app", "app.game_service", "agents", "benchmark", "aar", "observer", "observer.screens",
-    "amaw_resources",
+    "amaw_resources", "amaw_cli",
 ]
-# The CLI is a single top-level module (not pre-split into a package — TRD §5), kept out of the
-# engine packages above so the `app/` import boundary holds as it grows.
-py-modules = ["amaw_cli", "amaw_contracts", "amaw_unattended"]
+py-modules = ["amaw_contracts", "amaw_unattended"]
 
 [tool.setuptools.package-data]
 aar = ["templates/*.css"]
@@ -110,7 +110,7 @@ files = [
     "aar",
     # #23: the observer feed's item shapes are the export's; keep them typed at the boundary.
     "observer",
-    "amaw_cli.py",
+    "amaw_cli",
     "agents/model_client.py",
     "agents/tool_surface.py",
     # I-118: the condition resolver and the scenario schema that declares its defaults.

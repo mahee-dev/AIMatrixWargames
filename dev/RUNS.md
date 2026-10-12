@@ -965,7 +965,7 @@ other played Actors' decisions (turn 2 Cestia, Arkania's and Belvar's acceptance
 Belvar, Cestia's acceptance). Only turn 2 Belvar's, on an independent verification mission, is
 the kind of roll §23 allows. This was first recorded as one case; see I-164.
 
-### Run 24 — 2026-10-11 · `nine-minutes-to-zero` and `two-minds-one-plan` 2.2.0 · first attempts on DeepSeek v4.1 Flash **aborted in turn 1** · not staged
+### Run 24 — 2026-10-11 · `nine-minutes-to-zero` and `two-minds-one-plan` 2.2.0 · first attempts on DeepSeek v4.1 Flash **aborted in turn 1** · staged: `run24-clancy-v41-20261011/`
 
 Two games run concurrently on the day both scenarios were added (#36). Games `dec840e7…`
 (`nine-minutes-to-zero`, seed 21001) and `21c3e054…` (`two-minds-one-plan`, seed 21002).
@@ -987,12 +987,11 @@ reasoning with no tool call, all from one downstream provider (#32). The failure
 `UnexpectedModelBehavior` (#33) and the viewer showed nothing (#34). #31–#33 are fixed and #34
 is in review (#44); the model has not yet been run again.
 
-### Run 25 — 2026-10-11 · `two-minds-one-plan` 2.2.0 · first complete game **complete** · not staged
+### Run 25 — 2026-10-11 · `two-minds-one-plan` 2.2.0 · first complete game **complete** · staged: `run25-two-minds-one-plan-20261011/`
 
-Game `5e9edd40…`, the scenario's first complete game. Evidence is local and not yet staged for
-`amaw-runs`: the export and the after-action report and narrated cards
-(`data/exports/5e9edd40…{.json,-aar/}`), and `two-minds.log`, which also holds run 24's attempt
-on this scenario.
+Game `5e9edd40…`, the scenario's first complete game. Staged for `amaw-runs` with its
+after-action report and narrated cards (`aar/`); run 24's attempt on this scenario, which shared
+the log file, was split out into run 24's directory.
 
 **Setup.** As run 24, but `deepseek/deepseek-v4-flash-0731` for all five players and the Umpire.
 Seed 21002. Code `8f36519` (dirty).
@@ -1027,11 +1026,10 @@ recorded as the statutory alternative.
 - **Cooperation made it cheap and quiet.** With 3 Cons in 20 Arguments, the Umpire ruled mostly
   on agreed filings, as in the ratification phase of earlier games (Patterns).
 
-### Run 26 — 2026-10-11 · `northern-strait` · DeepSeek v4.1 Flash after #31–#34 and #45 **complete** · not staged
+### Run 26 — 2026-10-11 · `northern-strait` · DeepSeek v4.1 Flash after #31–#34 and #45 **complete** · staged: `run26-northern-strait-v41-20261011/`
 
 Game `6a589eb5…`, with the owner's approval, to check whether `deepseek/deepseek-v4.1-flash` can
-play a game once the fixes from run 24 are in. Evidence is local and not yet staged for
-`amaw-runs`: `data/exports/6a589eb5….json` and `northern-strait-v41.log`.
+play a game once the fixes from run 24 are in.
 
 **Setup.** `deepseek/deepseek-v4.1-flash` for all three players and the Umpire; seed 424242 (the
 scenario's own, as in run 23); released conditions (`single_shot` / `player-v1.11`, open

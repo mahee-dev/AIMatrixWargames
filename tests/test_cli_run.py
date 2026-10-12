@@ -10,7 +10,7 @@ import uuid
 import pytest
 from typer.testing import CliRunner
 
-import amaw_cli
+import amaw_cli.conditions
 
 
 def test_i048_007_and_i094_001_cli_resume_reconstructs_condition_and_honours_stream_override(
@@ -337,7 +337,7 @@ def test_cli_run_accepts_bundled_scenario_name(
     scenario.mkdir()
     (scenario / "scenario.yaml").write_text("scenario: {}\n", encoding="utf-8")
 
-    with amaw_cli._resolve_scenario(str(scenario)) as resolved:
+    with amaw_cli.conditions._resolve_scenario(str(scenario)) as resolved:
         assert resolved == scenario.resolve()
 
 
@@ -355,7 +355,7 @@ def test_cli_run_requires_openrouter_key(
     from app.config import Settings
 
     monkeypatch.setattr(
-        amaw_cli,
+        amaw_cli.conditions,
         "_cli_settings_with_admin_token",
         lambda: (Settings(_env_file=None), "cli-test-token"),
     )

@@ -57,4 +57,4 @@ the specification sections it implements.
 | `config` | Environment-driven settings and safe logging. |
 
 The reference agents (`../agents/`), the benchmark runner (`../benchmark/`) and the CLI
-(`../amaw_cli.py`) sit outside this package and talk to it through `api` or `game_service`.
+(`../amaw_cli/`) sit outside this package and talk to it through `api` or `game_service`.

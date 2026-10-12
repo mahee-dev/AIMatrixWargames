@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-import amaw_cli
+import amaw_cli.conditions
 from agents.guardrails import GuardrailConfig
 from agents.player import PlayerConfig
 from tests.cli_helpers import capture_run_cli, invoke_run
@@ -98,6 +98,6 @@ def test_i159_003_a_resumed_game_keeps_its_recorded_prompt(recorded: str | None,
     recipe = _recipe(umpire)
     config = PlayerConfig.from_resume_recipe(recipe, model="provider/original")
 
-    condition = amaw_cli._resolve_sealed_condition(recipe, config)
+    condition = amaw_cli.conditions._resolve_sealed_condition(recipe, config)
 
     assert condition.umpire_recipe["prompt_version"] == expected
