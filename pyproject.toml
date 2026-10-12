@@ -71,8 +71,8 @@ build-backend = "setuptools.build_meta"
 # The CLI is its own package, outside the engine packages, so the `app/` import boundary holds
 # as it grows.
 packages = [
-    "app", "agents", "benchmark", "aar", "observer", "observer.screens", "amaw_resources",
-    "amaw_cli",
+    "app", "app.game_service", "agents", "benchmark", "aar", "observer", "observer.screens",
+    "amaw_resources", "amaw_cli",
 ]
 py-modules = ["amaw_contracts", "amaw_unattended"]
 

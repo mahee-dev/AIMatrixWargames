@@ -11,7 +11,7 @@ the specification sections it implements.
 | Module | Owns |
 |---|---|
 | `models` | The domain entities and transition records (SQLModel), one module by design. |
-| `game_service` | The state machine — the **one** owner of every phase transition, Argument, Con, adjudication and Effect. Transactional; revalidates phase and eligibility inside the transaction. |
+| `game_service` | The state machine — the **one** owner of every phase transition, Argument, Con, adjudication and Effect. Transactional; revalidates phase and eligibility inside the transaction. A package with one module per concern: turns, diplomacy, Arguments and Cons, Notes, adjudication and the consequence pass, over the shared helpers in `_common`. |
 | `game_errors` | The game-domain errors the state machine raises, shared by mutation and read-model boundaries. Re-exported by `game_service`. |
 | `game_results` | The frozen result values each state-machine operation returns, and an idempotent replay rebuilds. Re-exported by `game_service`. |
 | `game_queries` | Neutral read-only game-state queries shared by `game_service` and `context`. |

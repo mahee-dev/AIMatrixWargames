@@ -261,7 +261,7 @@ def test_t081_004_an_existing_release_is_never_duplicated(db_engine: Engine, tmp
     _to_next_turn(db_engine, creation.game_id)
     with session_scope(db_engine) as session:
         game = session.get(Game, creation.game_id)
-        game_service._release_injects(session, game)  # a second attempt for the same turn
+        game_service.turns._release_injects(session, game)  # a second attempt for the same turn
     assert [e.inject for e in _inject_effects(db_engine, creation.game_id)] == [
         "port-strike", "arkania-order",
     ]
