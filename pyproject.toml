@@ -124,6 +124,9 @@ files = [
     "benchmark/controls.py",
     "agents/autonomous.py",
     "agents/player.py",
+    "agents/player_config.py",
+    "agents/player_errors.py",
+    "agents/player_model.py",
     "app/provenance.py",
 ]
 follow_imports = "silent"
