@@ -32,8 +32,6 @@ the lifecycle runner; the per-activation bounds are applied inside ``activate``.
 
 from __future__ import annotations
 
-import copy
-import dataclasses
 import hashlib
 import json
 import logging
@@ -41,30 +39,12 @@ import threading
 import time
 import uuid
 from dataclasses import dataclass, field
-from pathlib import Path
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
-import httpx
-from pydantic import ValidationError
 from pydantic_ai import Agent
-from pydantic_ai.exceptions import (
-    ModelAPIError,
-    ModelHTTPError,
-    ModelRetry,
-    ToolRetryError,
-    UnexpectedModelBehavior,
-    UsageLimitExceeded,
-)
-from pydantic_ai.messages import (
-    ModelRequest,
-    ModelResponse,
-    TextPart,
-    ToolCallPart,
-    ToolReturnPart,
-    UserPromptPart,
-)
-from pydantic_ai.models.wrapper import WrapperModel
+from pydantic_ai.exceptions import ModelRetry, UsageLimitExceeded
+from pydantic_ai.messages import ModelResponse, ToolCallPart
 from pydantic_ai.usage import UsageLimits
 
 from amaw_contracts import (  # noqa: F401 - the profile vocabulary is re-exported from here
@@ -89,76 +69,65 @@ from agents.guardrails import (  # noqa: F401 - re-exported: the historical impo
     check_strategic_memory,
     guardrail_error as _guardrail_error,
 )
-from agents.inference_profile import INFERENCE_PROFILE_UNIFORM, InferenceProfile
-from agents.model_client import _STATUS_CATEGORY, ProviderErrorCategory
-from agents.request_topology import RequestTopologyProfiler
-from agents.tool_surface import COMPACTABLE_RESEARCH_TOOL_NAMES, ToolSurface
+from agents.tool_surface import ToolSurface
 from agents.tools import PlayerTools, ToolResult
-from amaw_resources import read_prompt
+from agents.player_errors import (  # noqa: F401 - re-exported: the historical import path
+    FAIL_DETERMINISTIC,
+    FAIL_GUARDRAIL,
+    FAIL_TRANSIENT,
+    ActivationFailed,
+    PlayerConfigError,
+    PlayerError,
+    _cause_summary,
+    _classify_activation_error,
+    _failure_cause,
+    classify_invalid_tool_calls,
+)
+from agents.player_config import (  # noqa: F401 - re-exported: the historical import path
+    ACTIVATION_MODES,
+    ACTIVATION_MODE_SINGLE_SHOT,
+    ACTIVATION_MODE_TOOL_LOOP,
+    BASELINE_TOOL_SCHEMA_VERSION,
+    BATCHED_REPLY_TOOL_SCHEMA_VERSION,
+    BATCHED_TOOL_SCHEMA_VERSION,
+    CON_REPLY_MODES,
+    CON_REPLY_MODE_SEALED,
+    CON_REPLY_MODE_VISIBLE,
+    PLAYER_CONTEXT_MODE,
+    PLAYER_MEMORY_VERSION,
+    PLAYER_PROMPT_VERSION,
+    PLAYER_PROMPT_VERSIONS,
+    REPLY_PLAYER_PROMPT_VERSIONS,
+    REPLY_TOOL_SCHEMA_VERSION,
+    RESEARCH_BATCH_MAX_ITEMS,
+    RESEARCH_HISTORY_COMPACT_SUCCESS_V1,
+    RESEARCH_HISTORY_FULL_V1,
+    RESEARCH_HISTORY_MODES,
+    RESEARCH_MODES,
+    RESEARCH_MODE_BATCHED_V1,
+    RESEARCH_MODE_SEQUENTIAL_V1,
+    TOOL_SURFACES,
+    TOOL_SURFACE_AVAILABLE_ONLY,
+    TOOL_SURFACE_BROAD,
+    _CONTEXT_FRAGMENT_KEYS,
+    PlayerConfig,
+    load_player_prompt,
+    prompt_hash_for,
+    tool_schema_version_for,
+)
+from agents.player_model import (  # noqa: F401 - re-exported: the historical import path
+    _TimedModel,
+    _accumulated_usage_dict,
+    build_openrouter_model,
+    compact_research_history,
+    phase_model_settings,
+    player_model_settings,
+)
 
 logger = logging.getLogger("agents.player")
 
 if TYPE_CHECKING:  # pragma: no cover - typing only, never imported at runtime into app/
-    from pydantic_ai.models.openrouter import OpenRouterModelSettings
-
     from app.config import Settings
-
-# The versioned neutral prompts (I-001 settled their authoritative source; D-003). Read from
-# wheel package data at runtime, never embedded in code (agents.md §17). Each activation mode has
-# its own immutable prompt version (agents.md §31). I-034 issues new versions for the incremental
-# context + rolling-memory benchmark condition; all earlier versions remain immutable.
-ACTIVATION_MODE_TOOL_LOOP = "tool_loop"
-ACTIVATION_MODE_SINGLE_SHOT = "single_shot"
-ACTIVATION_MODES = (ACTIVATION_MODE_TOOL_LOOP, ACTIVATION_MODE_SINGLE_SHOT)
-PLAYER_CONTEXT_MODE = "incremental-context-v1"
-PLAYER_MEMORY_VERSION = "strategic-memory-v1"
-RESEARCH_MODE_SEQUENTIAL_V1 = "sequential-v1"
-RESEARCH_MODE_BATCHED_V1 = "batched-v1"
-RESEARCH_MODES = (RESEARCH_MODE_SEQUENTIAL_V1, RESEARCH_MODE_BATCHED_V1)
-# I-092 / D-079: the mutating tools a ``tool_loop`` model is offered. ``broad`` is the whole
-# vocabulary (attempts outside ``available_actions`` stay measurable); ``available_only`` follows
-# the server's current declaration. Sealed like ``activation_mode``; inert outside ``tool_loop``.
-TOOL_SURFACE_BROAD = "broad"
-TOOL_SURFACE_AVAILABLE_ONLY = "available_only"
-TOOL_SURFACES = (TOOL_SURFACE_BROAD, TOOL_SURFACE_AVAILABLE_ONLY)
-RESEARCH_HISTORY_FULL_V1 = "full-v1"
-RESEARCH_HISTORY_COMPACT_SUCCESS_V1 = "compact-success-v1"
-RESEARCH_HISTORY_MODES = (
-    RESEARCH_HISTORY_FULL_V1,
-    RESEARCH_HISTORY_COMPACT_SUCCESS_V1,
-)
-RESEARCH_BATCH_MAX_ITEMS = 8
-BASELINE_TOOL_SCHEMA_VERSION = "player-tools-v11-live-bounded-research"
-# I-101 / D-085 (v17/v18, "item-outcomes"): the batch tools continue after recoverable item
-# failures and return one ordered outcome per executed item. The sequential surfaces (v11/v13)
-# are byte-identical and stand.
-BATCHED_TOOL_SCHEMA_VERSION = (
-    "player-tools-v17-batched-live-bounded-operations-item-outcomes"
-)
-# I-046 / D-060: the visible_reply schemas add ``reply_to_cons``. I-069 versions both surfaces
-# because bounded dynamic research availability changes the model-facing tool definitions.
-# I-091 / D-077 (v11–v14, "live"): after the Actor's own successful mutation the tool-loop
-# surface follows the server's refreshed declaration and results carry a §6 context fragment.
-REPLY_TOOL_SCHEMA_VERSION = "player-tools-v13-reply-live-bounded-research"
-BATCHED_REPLY_TOOL_SCHEMA_VERSION = (
-    "player-tools-v18-batched-reply-live-bounded-operations-item-outcomes"
-)
-# The agents.md §6 ``observe`` shape, attached to a successful mutation's result as ``context``.
-_CONTEXT_FRAGMENT_KEYS = ("turn", "phase", "active_actor_id", "requires_input", "available_actions")
-CON_REPLY_MODE_SEALED = "sealed_cons"
-CON_REPLY_MODE_VISIBLE = "visible_reply"
-CON_REPLY_MODES = (CON_REPLY_MODE_SEALED, CON_REPLY_MODE_VISIBLE)
-PLAYER_PROMPT_VERSIONS = {
-    ACTIVATION_MODE_TOOL_LOOP: "player-v1.10",
-    ACTIVATION_MODE_SINGLE_SHOT: "player-v1.11",
-}
-# The visible_reply prompts state the Con visibility before any Con is submitted (agents.md
-# §12); a sealed-Con prompt is never reused unchanged for that mode (D-060).
-REPLY_PLAYER_PROMPT_VERSIONS = {
-    ACTIVATION_MODE_TOOL_LOOP: "player-v1.12",
-    ACTIVATION_MODE_SINGLE_SHOT: "player-v1.13",
-}
-PLAYER_PROMPT_VERSION = PLAYER_PROMPT_VERSIONS[ACTIVATION_MODE_TOOL_LOOP]  # historical name
 
 
 # The activation prompt embeds the decision packet as JSON after this marker, so the packet is
@@ -166,463 +135,6 @@ PLAYER_PROMPT_VERSION = PLAYER_PROMPT_VERSIONS[ACTIVATION_MODE_TOOL_LOOP]  # his
 ACTIVATION_PACKET_MARKER = "=== DECISION CONTEXT (JSON) ==="
 
 # The tool-name vocabularies and the exposure policy live in :mod:`agents.tool_surface`.
-
-
-def compact_research_history(messages: list[Any]) -> list[Any]:
-    """Remove completed success plumbing while retaining exact research results.
-
-    PydanticAI's authoritative graph history is never mutated. A provider-visible copy replaces
-    only a complete research-only ``ToolCallPart`` → successful ``ToolReturnPart`` exchange with
-    ordinary response/request messages. Returned ``data`` is copied verbatim into canonical JSON;
-    failures, mixed exchanges and incomplete calls remain untouched so correction semantics and
-    I-052 classification are unchanged.
-    """
-    compacted: list[Any] = []
-    index = 0
-    while index < len(messages):
-        response = messages[index]
-        request = messages[index + 1] if index + 1 < len(messages) else None
-        response_parts = list(getattr(response, "parts", []))
-        request_parts = list(getattr(request, "parts", []))
-        if (
-            isinstance(response, ModelResponse)
-            and isinstance(request, ModelRequest)
-            and response_parts
-            and request_parts
-            and all(
-                isinstance(part, ToolCallPart)
-                and part.tool_name in COMPACTABLE_RESEARCH_TOOL_NAMES
-                for part in response_parts
-            )
-            and all(isinstance(part, ToolReturnPart) for part in request_parts)
-        ):
-            calls = {part.tool_call_id: part for part in response_parts}
-            returns = {part.tool_call_id: part for part in request_parts}
-            if set(calls) == set(returns) and all(
-                isinstance(part.content, dict)
-                and part.content.get("ok") is True
-                and "data" in part.content
-                for part in request_parts
-            ):
-                retained = {
-                    "retained_research_results": [
-                        {
-                            "tool_name": part.tool_name,
-                            "data": part.content["data"],
-                        }
-                        for part in request_parts
-                    ],
-                    "schema_version": "research-history-compact-success-v1",
-                }
-                compacted.append(dataclasses.replace(
-                    response,
-                    parts=[TextPart(
-                        content="Completed research calls; exact returned data follows."
-                    )],
-                ))
-                compacted.append(dataclasses.replace(
-                    request,
-                    parts=[UserPromptPart(content=json.dumps(
-                        retained,
-                        ensure_ascii=False,
-                        sort_keys=True,
-                        separators=(",", ":"),
-                        default=str,
-                    ))],
-                ))
-                index += 2
-                continue
-        compacted.append(copy.deepcopy(response))
-        index += 1
-    return compacted
-
-
-class PlayerError(RuntimeError):
-    """An unrecoverable player-side failure (e.g. the authoritative context could not be read)."""
-
-
-class PlayerConfigError(PlayerError):
-    """The player is misconfigured — e.g. a real model was requested with no OpenRouter key."""
-
-
-# Failure categories for one activation (T-041). Only ``TRANSIENT`` is retried (once); the rest
-# are terminal for the activation and hand control to the runner's stall-recovery policy.
-FAIL_TRANSIENT = "transient"  # a clearly transient model/network failure — retry once
-FAIL_DETERMINISTIC = "deterministic"  # auth/validation/config — retrying cannot help
-FAIL_GUARDRAIL = "guardrail"  # a per-activation ceiling (iterations/tool calls) was hit
-
-
-class ActivationFailed(PlayerError):
-    """One activation ultimately failed (agents.md §18 step 3 / TRD §35).
-
-    Raised only after the single transient retry is exhausted, or immediately for a deterministic
-    or guardrail-ceiling failure. It is the structured signal the :class:`LifecycleRunner` turns
-    into a recorded failure plus a legal auto-ready/auto-pass — never a swallowed exception and
-    never an unbounded loop. :attr:`category` is one of the ``FAIL_*`` constants.
-    """
-
-    def __init__(self, message: str, *, category: str, counts: dict[str, Any] | None = None) -> None:
-        super().__init__(message)
-        self.category = category
-        self.detail = message
-        self.counts = counts or {}
-        self.activation_id: str | None = None
-
-
-class _TimedModel(WrapperModel):
-    """Measure waits and retain every returned request's usage at the model boundary.
-
-    PydanticAI's model loop calls ``request`` once per model iteration. Wrapping that exact
-    boundary gives I-027 the iteration count/provider wait and I-050 usage that survives output
-    rejection or a new ``run_sync`` attempt. Timing/usage from only the final outer run loses
-    already-consumed provider work.
-    """
-
-    def __init__(self, wrapped: Any, *, research_history_mode: str) -> None:
-        super().__init__(wrapped)
-        self._research_history_mode = research_history_mode
-        self._metrics_lock = threading.Lock()
-        self._request_count = 0
-        self._wait_seconds = 0.0
-        self._request_usage: list[dict[str, Any]] = []
-        self._excluded_providers: list[str] = []
-        self._topology = RequestTopologyProfiler()
-
-    def reset_metrics(self) -> None:
-        with self._metrics_lock:
-            self._request_count = 0
-            self._wait_seconds = 0.0
-            self._request_usage = []
-            self._excluded_providers = []
-            self._topology.reset()
-
-    def metrics(self) -> tuple[int, float, list[dict[str, Any]], dict[str, Any]]:
-        with self._metrics_lock:
-            return (
-                self._request_count,
-                self._wait_seconds,
-                [dict(item) for item in self._request_usage],
-                self._topology.snapshot(),
-            )
-
-    async def request(self, messages, model_settings, model_request_parameters):  # noqa: ANN001
-        provider_messages = (
-            compact_research_history(list(messages))
-            if self._research_history_mode == RESEARCH_HISTORY_COMPACT_SUCCESS_V1
-            else messages
-        )
-        with self._metrics_lock:
-            self._request_count += 1
-            request_number = self._request_count
-            excluded = list(self._excluded_providers)
-            if excluded:
-                model_settings = _settings_ignoring_providers(model_settings, excluded)
-            topology_record = self._topology.capture(
-                provider_messages,
-                model_settings,
-                model_request_parameters,
-                request_number=request_number,
-            )
-        started = time.perf_counter()
-        response = None
-        try:
-            response = await self.wrapped.request(
-                provider_messages, model_settings, model_request_parameters
-            )
-            return response
-        finally:
-            elapsed = time.perf_counter() - started
-            with self._metrics_lock:
-                self._wait_seconds += elapsed
-                if response is not None:
-                    usage = _request_usage_dict(
-                        response.usage,
-                        request_number=request_number,
-                        provider_details=response.provider_details,
-                    )
-                    if excluded:
-                        usage["excluded_providers"] = excluded
-                    self._request_usage.append(usage)
-                    self._exclude_if_unusable(response)
-                    self._topology.attach_provider_usage(topology_record, usage)
-
-
-    def _exclude_if_unusable(self, response: Any) -> None:
-        """Route the rest of this activation away from a provider that returned nothing usable.
-
-        A response with neither text nor a tool call (reasoning only, or empty) is a provider
-        failure, not a decision: some providers end the turn after the model's reasoning. Later
-        requests of the same activation, including the output retry and the activation retry,
-        exclude that downstream provider. The model's conversation and retry budget are
-        unchanged, so the run condition is too; only routing differs, as for the Umpire (#32,
-        D-061). The gateway's own label is never excluded. Called with the metrics lock held.
-        """
-        if _has_usable_output(response):
-            return
-        provider = (response.provider_details or {}).get("downstream_provider")
-        if not isinstance(provider, str) or not provider or provider.casefold() == "openrouter":
-            return
-        if provider not in self._excluded_providers:
-            self._excluded_providers.append(provider)
-            logger.info("excluding provider %s after a response with no text or tool call", provider)
-
-
-def _has_usable_output(response: Any) -> bool:
-    for part in response.parts:
-        if isinstance(part, ToolCallPart):
-            return True
-        if isinstance(part, TextPart) and part.content.strip():
-            return True
-    return False
-
-
-def _settings_ignoring_providers(model_settings: Any, providers: list[str]) -> dict[str, Any]:
-    """A copy of ``model_settings`` whose OpenRouter routing also ignores ``providers``."""
-    settings = dict(model_settings or {})
-    routing = dict(settings.get("openrouter_provider") or {})
-    ignored = list(routing.get("ignore") or [])
-    routing["ignore"] = ignored + [p for p in providers if p not in ignored]
-    settings["openrouter_provider"] = routing
-    return settings
-
-
-def _usage_integer(usage: Any, *names: str) -> int:
-    details = dict(getattr(usage, "details", {}) or {})
-    for name in names:
-        value = getattr(usage, name, None)
-        if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
-            return value
-        value = details.get(name)
-        if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
-            return value
-    return 0
-
-
-def _provider_reported_cost(provider_details: dict[str, Any] | None) -> float | None:
-    """The cost the provider reported for one request, or ``None`` when it reported none.
-
-    PydanticAI's OpenRouter adapter copies OpenRouter's ``usage.cost`` into
-    ``ModelResponse.provider_details["cost"]``. ``RequestUsage.cost`` is not read: PydanticAI
-    fills it with a local genai-prices estimate, and cost is never fabricated (D-039, I-117).
-    An explicit ``0`` is a known zero cost, not a missing one.
-    """
-    value = (provider_details or {}).get("cost")
-    if isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0:
-        return float(value)
-    return None
-
-
-def _request_usage_dict(
-    usage: Any, *, request_number: int, provider_details: dict[str, Any] | None = None
-) -> dict[str, Any]:
-    """Normalize one PydanticAI RequestUsage without double-counting inclusive buckets.
-
-    Routed providers can report a cache/reasoning subset larger than its nominal parent. As on
-    the Umpire path (I-066), raise the parent to the subset as the conservative lower bound:
-    adding could double-count an already-inclusive provider and clamping would discard observed
-    usage. Preserve every adjustment on the per-request reconciliation record.
-    """
-    details = dict(getattr(usage, "details", {}) or {})
-    reasoning = _usage_integer(usage, "reasoning_tokens", "output_reasoning_tokens")
-    if reasoning and not ({"reasoning_tokens", "output_reasoning_tokens"} & details.keys()):
-        details["output_reasoning_tokens"] = reasoning
-    reported_input = _usage_integer(usage, "input_tokens")
-    cache_read = _usage_integer(usage, "cache_read_tokens")
-    cache_write = _usage_integer(usage, "cache_write_tokens")
-    input_tokens = max(reported_input, cache_read, cache_write)
-    reported_output = _usage_integer(usage, "output_tokens")
-    output_tokens = max(reported_output, reasoning)
-    normalization: dict[str, int] = {}
-    if input_tokens != reported_input:
-        normalization.update({
-            "input_tokens_reported": reported_input,
-            "input_tokens_recorded": input_tokens,
-            "cache_read_tokens_reported": cache_read,
-            "cache_write_tokens_reported": cache_write,
-        })
-    if output_tokens != reported_output:
-        normalization.update({
-            "output_tokens_reported": reported_output,
-            "output_tokens_recorded": output_tokens,
-            "reasoning_tokens_reported": reasoning,
-        })
-    cost = _provider_reported_cost(provider_details)
-    record = {
-        "request_number": request_number,
-        "input_tokens": input_tokens,
-        "output_tokens": output_tokens,
-        "reasoning_tokens": reasoning,
-        "cache_read_tokens": cache_read,
-        "cache_write_tokens": cache_write,
-        "cost_usd": cost,
-        "details": details,
-    }
-    if normalization:
-        record["usage_normalization"] = normalization
-    return record
-
-
-def _accumulated_usage_dict(
-    request_count: int,
-    request_usage: list[dict[str, Any]],
-    *,
-    tool_calls: int,
-) -> dict[str, Any]:
-    details: dict[str, int] = {}
-    for item in request_usage:
-        for name, value in item["details"].items():
-            if isinstance(value, int) and not isinstance(value, bool):
-                details[name] = details.get(name, 0) + value
-    known_costs = [item["cost_usd"] for item in request_usage if item["cost_usd"] is not None]
-    return {
-        "input_tokens": sum(item["input_tokens"] for item in request_usage),
-        "output_tokens": sum(item["output_tokens"] for item in request_usage),
-        "reasoning_tokens": sum(item["reasoning_tokens"] for item in request_usage),
-        "cache_read_tokens": sum(item["cache_read_tokens"] for item in request_usage),
-        "cache_write_tokens": sum(item["cache_write_tokens"] for item in request_usage),
-        "requests": request_count,
-        "usage_reported_requests": len(request_usage),
-        "billed_requests": sum(item["cost_usd"] is not None for item in request_usage),
-        "tool_calls": tool_calls,
-        "cost_usd": sum(known_costs) if known_costs else None,
-        "details": details,
-        "request_usage": [dict(item) for item in request_usage],
-    }
-
-
-@dataclass(frozen=True)
-class PlayerConfig:
-    """Per-player model configuration (agents.md §19). Model selection is per Actor/player."""
-
-    model: str
-    temperature: float | None = None
-    max_tokens: int | None = None
-    timeout: float | None = None
-    reasoning_effort: str | None = None
-    # How one activation is driven (I-031): ``tool_loop`` — the model is expected to call one
-    # mutating tool per provider round-trip (siblings in one response race, D-082);
-    # ``single_shot`` — one structured decision, research tools still callable.
-    # A benchmark condition, recorded in the run manifest and every AgentRun row.
-    activation_mode: str = ACTIVATION_MODE_SINGLE_SHOT
-    # I-057: independently selectable model-facing research surface and provider-visible
-    # intra-activation history policy. Released behavior remains the default.
-    research_mode: str = RESEARCH_MODE_SEQUENTIAL_V1
-    # D-084: server-side Resource matching/ranking, independent of research request topology.
-    # I-112/D-088: the evaluated token-coverage contract is the released default; v1 is explicit.
-    search_contract: str = SEARCH_CONTRACT_DEFAULT
-    research_history_mode: str = RESEARCH_HISTORY_FULL_V1
-    # I-092 / D-079: which mutating tools a ``tool_loop`` model is offered — ``broad`` (the
-    # whole vocabulary, today's behaviour) or ``available_only`` (only what the server's current
-    # ``available_actions`` lists). Always a valid sealed value; it governs only the tool-loop
-    # mutating surface, so under ``single_shot`` it is recorded as given and has no effect.
-    tool_surface: str = TOOL_SURFACE_BROAD
-    # I-032: per-phase overrides of ``reasoning_effort``/``max_tokens``; ``uniform`` = none.
-    inference_profile: InferenceProfile = INFERENCE_PROFILE_UNIFORM
-    # I-046 / D-060: the game's Con-reply condition as the player must know it — it selects the
-    # prompt (visibility disclosure) and the tool schema. Released ``sealed_cons`` is the default.
-    con_reply_mode: str = CON_REPLY_MODE_SEALED
-    # ``None`` resolves to the mode's own immutable prompt version (agents.md §31).
-    prompt_version: str | None = None
-    guardrails: GuardrailConfig = field(default_factory=GuardrailConfig)
-
-    def shared_condition(self) -> dict[str, Any]:
-        """Every field but ``model``: the player condition one game's Seats must share (I-083).
-
-        The canonical projection behind the runner's roster check — derived from the dataclass
-        fields so a newly added setting joins the held-constant set by construction
-        (benchmark-methodology.md §5.1, agents.md §19: "vary only the underlying model").
-        """
-        return {
-            f.name: getattr(self, f.name) for f in dataclasses.fields(self) if f.name != "model"
-        }
-
-    def resolve_inference(self, phase: str | None) -> dict[str, Any]:
-        """The ``reasoning_effort``/``max_tokens`` actually requested in ``phase`` (I-032)."""
-        return self.inference_profile.resolve_phase(
-            phase or "", reasoning_effort=self.reasoning_effort, max_tokens=self.max_tokens
-        )
-
-    @classmethod
-    def from_resume_recipe(cls, recipe: dict[str, Any], *, model: str) -> PlayerConfig:
-        """The shared player configuration a sealed ``autonomous-resume-v1`` recipe describes.
-
-        The inverse of :func:`agents.autonomous.build_resume_recipe` (I-061): a recipe parsed
-        here and rebuilt there is byte-identical, which is what ``resume`` relies on. A
-        pre-condition recipe carries no research keys, no inference profile, no Con-reply
-        condition and legacy guardrails; each resolves to the released default it ran under.
-        """
-        from app.game_loop import GameLoopCondition
-
-        player = recipe["player"]
-        sealed_profile = recipe.get("inference_profile")
-        return cls(
-            model=model,
-            temperature=player["temperature"],
-            max_tokens=player["max_tokens"],
-            timeout=player["timeout"],
-            reasoning_effort=player["reasoning_effort"],
-            activation_mode=player["activation_mode"],
-            research_mode=player.get("research_mode", RESEARCH_MODE_SEQUENTIAL_V1),
-            # A pre-I-112 recipe was sealed under the v1 default and is never reinterpreted
-            # as v2 (D-084, D-088); only a recipe that states the contract carries it.
-            search_contract=player.get("search_contract", SEARCH_CONTRACT_V1),
-            research_history_mode=player.get(
-                "research_history_mode", RESEARCH_HISTORY_FULL_V1
-            ),
-            # A pre-I-092 recipe ran the broad surface; it is never silently switched (D-079).
-            tool_surface=player.get("tool_surface", TOOL_SURFACE_BROAD),
-            inference_profile=(
-                InferenceProfile.from_document(sealed_profile, sealed=True)
-                if sealed_profile is not None
-                else INFERENCE_PROFILE_UNIFORM
-            ),
-            con_reply_mode=GameLoopCondition.from_mapping(recipe["coordinator"]).con_reply_mode,
-            prompt_version=player["prompt_version"],
-            guardrails=GuardrailConfig(**player["guardrails"]),
-        )
-
-    def __post_init__(self) -> None:
-        if not isinstance(self.inference_profile, InferenceProfile):
-            raise ValueError("inference_profile must be an InferenceProfile")
-        if self.activation_mode not in ACTIVATION_MODES:
-            raise ValueError(
-                f"activation_mode must be one of {ACTIVATION_MODES}, got {self.activation_mode!r}"
-            )
-        if self.research_mode not in RESEARCH_MODES:
-            raise ValueError(
-                f"research_mode must be one of {RESEARCH_MODES}, got {self.research_mode!r}"
-            )
-        if self.search_contract not in SEARCH_CONTRACTS:
-            raise ValueError(
-                f"search_contract must be one of {SEARCH_CONTRACTS}, got {self.search_contract!r}"
-            )
-        if self.research_history_mode not in RESEARCH_HISTORY_MODES:
-            raise ValueError(
-                "research_history_mode must be one of "
-                f"{RESEARCH_HISTORY_MODES}, got {self.research_history_mode!r}"
-            )
-        if self.con_reply_mode not in CON_REPLY_MODES:
-            raise ValueError(
-                f"con_reply_mode must be one of {CON_REPLY_MODES}, got {self.con_reply_mode!r}"
-            )
-        if self.tool_surface not in TOOL_SURFACES:
-            raise ValueError(
-                f"tool_surface must be one of {TOOL_SURFACES}, got {self.tool_surface!r}"
-            )
-        # The top-level effort fails closed exactly as an inference-profile entry does, rather
-        # than reaching the provider as an unknown level (I-127, D-101).
-        if self.reasoning_effort is not None and not is_reasoning_effort(self.reasoning_effort):
-            raise ValueError(
-                f"reasoning_effort must be one of {REASONING_EFFORTS}, "
-                f"got {self.reasoning_effort!r}"
-            )
-        if self.prompt_version is None:
-            versions = (
-                REPLY_PLAYER_PROMPT_VERSIONS
-                if self.con_reply_mode == CON_REPLY_MODE_VISIBLE
-                else PLAYER_PROMPT_VERSIONS
-            )
-            object.__setattr__(self, "prompt_version", versions[self.activation_mode])
 
 
 @dataclass(frozen=True)
@@ -658,210 +170,6 @@ class ActivationResult:
     decision: dict[str, Any] | None = None
 
 
-def classify_invalid_tool_calls(
-    messages: list[Any],
-    *,
-    executed_rejections: list[dict[str, Any]] | None = None,
-    decision_tool_name: str | None = None,
-) -> dict[str, Any]:
-    """Classify events in the compatible invalid-call total without retaining content."""
-    from pydantic_ai.messages import RetryPromptPart
-
-    events: list[dict[str, Any]] = []
-
-    def append(
-        category: str,
-        reason: str,
-        *,
-        action: str | None,
-        error_code: str | None,
-        http_status: int | None,
-        ensuing_model_retry: bool,
-    ) -> None:
-        events.append(
-            {
-                "sequence": len(events) + 1,
-                "category": category,
-                "reason": reason,
-                "action": action,
-                "error_code": error_code,
-                "http_status": http_status,
-                "ensuing_model_retry": ensuing_model_retry,
-            }
-        )
-
-    for message in messages:
-        for part in getattr(message, "parts", []):
-            if isinstance(part, ToolReturnPart) and isinstance(part.content, dict):
-                content = part.content
-                if content.get("ok") is not False:
-                    continue
-                raw_error = content.get("error")
-                tool_error = raw_error if isinstance(raw_error, dict) else {}
-                code = tool_error.get("code")
-                status = content.get("http_status")
-                append(
-                    "callable_tool_failure",
-                    "server_rejection" if isinstance(status, int) else "client_guardrail",
-                    action=part.tool_name,
-                    error_code=code if isinstance(code, str) else None,
-                    http_status=status if isinstance(status, int) else None,
-                    ensuing_model_retry=True,
-                )
-            elif (
-                decision_tool_name is not None
-                and isinstance(part, RetryPromptPart)
-                and part.tool_name == decision_tool_name
-            ):
-                reason = (
-                    "schema_validation"
-                    if isinstance(part.content, list)
-                    else "output_validation"
-                )
-                error_code = None
-                if isinstance(part.content, str):
-                    try:
-                        retry_payload = json.loads(part.content)
-                    except (TypeError, ValueError):
-                        retry_payload = None
-                    if isinstance(retry_payload, dict) and retry_payload.get("ok") is False:
-                        error = retry_payload.get("error")
-                        if isinstance(error, dict) and isinstance(error.get("code"), str):
-                            error_code = error["code"]
-                            reason = "client_guardrail"
-                append(
-                    "decision_validation_retry",
-                    reason,
-                    action=part.tool_name,
-                    error_code=error_code,
-                    http_status=None,
-                    ensuing_model_retry=True,
-                )
-
-    for rejected in executed_rejections or []:
-        status = rejected.get("http_status")
-        append(
-            "executed_action_rejection",
-            "server_rejection" if isinstance(status, int) else "execution_precondition",
-            action=rejected.get("action") if isinstance(rejected.get("action"), str) else None,
-            error_code=rejected.get("code") if isinstance(rejected.get("code"), str) else None,
-            http_status=status if isinstance(status, int) else None,
-            ensuing_model_retry=False,
-        )
-
-    counts_by_category = {
-        category: sum(event["category"] == category for event in events)
-        for category in INVALID_TOOL_CALL_CATEGORIES
-        if any(event["category"] == category for event in events)
-    }
-    reasons = sorted({event["reason"] for event in events})
-    return {
-        "schema_version": INVALID_TOOL_CALL_SCHEMA_VERSION,
-        "total": len(events),
-        "counts_by_category": counts_by_category,
-        "counts_by_reason": {
-            reason: sum(event["reason"] == reason for event in events) for reason in reasons
-        },
-        "events": events,
-    }
-
-
-def prompt_hash_for(config: PlayerConfig) -> str:
-    """SHA-256 of ``config``'s prompt template before Actor-name substitution.
-
-    I-078: the same derivation serves the player's recorded provenance and a batch's expected
-    condition, so what a game records and what the batch declared cannot compute differently.
-    """
-    template = load_player_prompt("{actor_name}", version=config.prompt_version)
-    return hashlib.sha256(template.encode()).hexdigest()
-
-
-def tool_schema_version_for(config: PlayerConfig) -> str:
-    """The tool schema identity ``config`` runs under (research mode × Con-reply condition)."""
-    batched = config.research_mode == RESEARCH_MODE_BATCHED_V1
-    if config.con_reply_mode == CON_REPLY_MODE_VISIBLE:
-        return BATCHED_REPLY_TOOL_SCHEMA_VERSION if batched else REPLY_TOOL_SCHEMA_VERSION
-    return BATCHED_TOOL_SCHEMA_VERSION if batched else BASELINE_TOOL_SCHEMA_VERSION
-
-
-def load_player_prompt(
-    actor_name: str, *, path: Path | None = None, version: str | None = None
-) -> str:
-    """The packaged versioned prompt with the Actor name substituted (agents.md §17)."""
-    text = (
-        path.read_text(encoding="utf-8")
-        if path is not None
-        else read_prompt(version or PLAYER_PROMPT_VERSION)
-    )
-    return text.replace("{actor_name}", actor_name)
-
-
-def build_openrouter_model(config: PlayerConfig, settings: Settings) -> Any:
-    """A PydanticAI model pointed at OpenRouter (D-016 — the same provider boundary as T-038).
-
-    Key and base URL come from central :class:`app.config.Settings`; the key is never logged.
-    Imported lazily so importing this module does not require the ``agents`` extra unless a real
-    model is actually built.
-    """
-    from pydantic_ai.models.openrouter import OpenRouterModel
-    from pydantic_ai.providers.openrouter import OpenRouterProvider
-    from openai import AsyncOpenAI
-
-    secret = settings.openrouter_api_key
-    key = secret.get_secret_value() if secret is not None else ""
-    if not key:
-        # Deterministic configuration failure — no network call is attempted, no key is exposed.
-        raise PlayerConfigError("no OpenRouter API key configured (set OPENROUTER_API_KEY)")
-
-    # Use PydanticAI's native OpenRouter adapter. OpenRouter extends the OpenAI response schema
-    # (provider metadata, `error` finish reasons, and occasional null completion envelopes); the
-    # generic OpenAI adapter can reject those valid HTTP-200 responses as unexpected behavior.
-    provider = OpenRouterProvider(
-        openai_client=AsyncOpenAI(
-            api_key=key,
-            base_url="https://openrouter.ai/api/v1",
-            max_retries=0,
-        )
-    )
-    overrides = player_model_settings(config)
-    return OpenRouterModel(config.model, provider=provider, settings=overrides or None)
-
-
-def player_model_settings(config: PlayerConfig) -> OpenRouterModelSettings:
-    """The flat base request settings every phase starts from (OpenRouter setting names)."""
-    overrides: OpenRouterModelSettings = {}
-    if config.temperature is not None:
-        overrides["temperature"] = config.temperature
-    if config.max_tokens is not None:
-        overrides["max_tokens"] = config.max_tokens
-    if config.timeout is not None:
-        overrides["timeout"] = config.timeout
-    effort = config.reasoning_effort
-    if effort is not None:
-        # ``PlayerConfig`` accepts only OpenRouter's levels, so this never refuses a built config.
-        if not is_reasoning_effort(effort):
-            raise PlayerConfigError(f"reasoning_effort {effort!r} is not an OpenRouter level")
-        overrides["openrouter_reasoning"] = {"effort": effort}
-    return overrides
-
-
-def phase_model_settings(config: PlayerConfig, phase: str | None) -> dict[str, Any]:
-    """Per-run settings for one activation: only what the profile changes for ``phase`` (I-032).
-
-    Returned empty under ``uniform`` so the request is byte-identical to the released behaviour;
-    otherwise PydanticAI merges these over the model's base settings for this run only.
-    """
-    if config.inference_profile.is_uniform:
-        return {}
-    resolved = config.resolve_inference(phase)
-    settings: dict[str, Any] = {}
-    if resolved["max_tokens"] is not None:
-        settings["max_tokens"] = resolved["max_tokens"]
-    if resolved["reasoning_effort"] is not None:
-        settings["openrouter_reasoning"] = {"effort": resolved["reasoning_effort"]}
-    return settings
-
-
 def _payload(result: ToolResult) -> dict[str, Any]:
     """Render a :class:`ToolResult` as a JSON-able dict the model can read.
 
@@ -880,100 +188,6 @@ def _payload(result: ToolResult) -> dict[str, Any]:
             "details": result.error_details,
         },
     }
-
-
-_CAUSE_CHAIN_LIMIT = 5
-_CAUSE_ERRORS_LIMIT = 10
-_CAUSE_TEXT_CHARS = 160
-
-
-def _failure_cause(exc: BaseException) -> dict[str, Any]:
-    """Why one attempt failed, in a form safe for the failure record and the export.
-
-    The record names the cause, never the content: the exception types down the chain, the
-    framework's own message, and for validation errors only each field path and error type.
-    Rejected values, ``msg`` texts that can echo them, and the model's output are left out,
-    because failure records reach exports that may be shared beyond the Actor's own material.
-    A guardrail retry keeps only its code. An operator can then tell, from the export alone, a
-    model that double-encodes objects from one that never calls the decision tool (#33).
-    """
-    chain: list[BaseException] = []
-    current: BaseException | None = exc
-    while current is not None and len(chain) < _CAUSE_CHAIN_LIMIT and current not in chain:
-        chain.append(current)
-        current = current.__cause__ or current.__context__
-    cause: dict[str, Any] = {"exception_chain": [type(item).__name__ for item in chain]}
-    if isinstance(exc, UnexpectedModelBehavior):
-        cause["message"] = exc.message[:_CAUSE_TEXT_CHARS]
-    errors: list[dict[str, str]] = []
-    for item in chain:
-        if isinstance(item, ValidationError):
-            errors.extend(_error_locations(item.errors()))
-        elif isinstance(item, ToolRetryError):
-            content = item.tool_retry.content
-            if isinstance(content, str):
-                cause["retry_prompt"] = _retry_prompt_summary(content)
-            else:
-                errors.extend(_error_locations(content))
-        elif isinstance(item, ModelRetry):
-            cause["retry_prompt"] = _retry_prompt_summary(item.message)
-    if errors:
-        cause["validation_errors"] = errors[:_CAUSE_ERRORS_LIMIT]
-    return cause
-
-
-def _error_locations(errors: Iterable[Any]) -> list[dict[str, str]]:
-    return [
-        {"loc": ".".join(str(part) for part in error.get("loc", ())), "type": str(error.get("type"))}
-        for error in errors
-    ]
-
-
-def _retry_prompt_summary(content: str) -> Any:
-    """A guardrail retry is reduced to its code; other retry text is the framework's, clipped."""
-    try:
-        payload = json.loads(content)
-    except ValueError:
-        return content[:_CAUSE_TEXT_CHARS]
-    code = (payload.get("error") or {}).get("code") if isinstance(payload, dict) else None
-    return {"code": code} if isinstance(code, str) else {"code": None}
-
-
-def _cause_summary(cause: dict[str, Any]) -> str:
-    """One line for the failure reason: the chain, then the first field or retry code."""
-    text = " <- ".join(cause["exception_chain"])
-    errors = cause.get("validation_errors")
-    prompt = cause.get("retry_prompt")
-    if errors:
-        text += f" ({errors[0]['loc']}: {errors[0]['type']})"
-    elif isinstance(prompt, dict) and prompt.get("code"):
-        text += f" ({prompt['code']})"
-    return text
-
-
-def _classify_activation_error(exc: BaseException) -> str:
-    """Map an exception raised by the model run to a ``FAIL_*`` category (drives the one retry).
-
-    Reuses T-038's status→category table (:data:`agents.model_client._STATUS_CATEGORY`) so the
-    reference player and the raw OpenRouter client agree on what "transient" means — no second
-    classification. Network-level httpx failures are transient. A model-behaviour failure
-    (``UnexpectedModelBehavior``: output-validation exhaustion, an unknown tool, unusable tool
-    output) is *deliberately* treated as transient too — it is one bad sample, and one retry on a
-    fresh sample is cheap and bounded (D-066). Everything unrecognised is deterministic (retrying
-    cannot help), so we never retry blindly.
-    """
-    if isinstance(exc, UsageLimitExceeded):
-        return FAIL_GUARDRAIL
-    if isinstance(exc, ModelHTTPError):
-        category = _STATUS_CATEGORY.get(exc.status_code, ProviderErrorCategory.OTHER)
-        return FAIL_TRANSIENT if category is ProviderErrorCategory.TRANSIENT else FAIL_DETERMINISTIC
-    # The native OpenRouter adapter uses ModelAPIError for a documented intermittent HTTP-200
-    # body with no completion/error envelope. It is explicitly a transient provider hiccup.
-    if isinstance(exc, (ModelAPIError, UnexpectedModelBehavior)):
-        return FAIL_TRANSIENT
-    if isinstance(exc, (httpx.TimeoutException, httpx.TransportError)):
-        return FAIL_TRANSIENT
-    return FAIL_DETERMINISTIC
 
 
 class ReferencePlayer:
