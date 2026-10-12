@@ -225,8 +225,9 @@ def test_t075_004_export_carries_provenance_and_the_same_seed_replays_identicall
 def test_t075_005_no_engine_code_names_the_scenario() -> None:
     manifest = _manifest()
     names = {SCENARIO_ID, *manifest["actors"], *(rule["id"] for rule in manifest["rules"])}
-    sources = [REPO / "amaw_cli.py"] + [
-        path for package in ("app", "agents", "benchmark") for path in (REPO / package).rglob("*")
+    sources = [
+        path for package in ("amaw_cli", "app", "agents", "benchmark")
+        for path in (REPO / package).rglob("*")
         if path.is_file() and path.suffix in {".py", ".md", ".txt", ".yaml", ".json"}
     ]
     for path in sources:

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-import amaw_cli
+import amaw_cli.conditions
 from tests.api_helpers import REPO_ROOT
 
 
@@ -31,7 +31,7 @@ def test_i096_001_run_disposes_engine_when_condition_construction_raises(
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
     monkeypatch.setenv("AMAW_DATABASE_PATH", str(tmp_path / "run.db"))
     monkeypatch.setattr("app.database.engine_for_path", lambda path: engine)
-    monkeypatch.setattr(amaw_cli, "_game_loop_condition", _fail_condition)
+    monkeypatch.setattr(amaw_cli.conditions, "_game_loop_condition", _fail_condition)
 
     result = CliRunner().invoke(amaw_cli.app, ["run", str(package)])
 
@@ -46,7 +46,7 @@ def test_i096_001_benchmark_disposes_engine_when_condition_construction_raises(
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
     monkeypatch.setenv("AMAW_DATABASE_PATH", str(tmp_path / "benchmark.db"))
     monkeypatch.setattr("app.database.engine_for_path", lambda path: engine)
-    monkeypatch.setattr(amaw_cli, "_game_loop_condition", _fail_condition)
+    monkeypatch.setattr(amaw_cli.conditions, "_game_loop_condition", _fail_condition)
 
     result = CliRunner().invoke(
         amaw_cli.app,
