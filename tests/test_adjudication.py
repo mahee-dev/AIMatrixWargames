@@ -417,7 +417,7 @@ def test_eff_003_active_effect_persists_across_turn(db_engine: Engine) -> None:
     with session_scope(db_engine) as session:
         game = persistence.get(session, Game, game_id)
         game.turn = 2
-        game_service._expire_effects(session, game)
+        game_service.turns._expire_effects(session, game)
     still = {e.description: e for e in _effects(db_engine, game_id)}
     assert still["Enduring state."].active is True
 
@@ -441,7 +441,7 @@ def test_eff_004_expiry_deactivates_at_turn_boundary(db_engine: Engine) -> None:
     with session_scope(db_engine) as session:
         game = persistence.get(session, Game, game_id)
         game.turn = 2
-        game_service._expire_effects(session, game)
+        game_service.turns._expire_effects(session, game)
     row = {e.description: e for e in _effects(db_engine, game_id)}["Expiring."]
     assert row.active is False
 

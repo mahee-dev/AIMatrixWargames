@@ -535,13 +535,13 @@ def test_i030_final_con_completion_and_close_roll_back_together(
         actor_id="belvar",
         reason="Belvar final",
     )
-    real_close = game_service._close_cons_if_complete
+    real_close = game_service.arguments._close_cons_if_complete
 
     def fail_after_close(session, game, argument):  # noqa: ANN001
         real_close(session, game, argument)
         raise RuntimeError("injected after final-Con closure")
 
-    monkeypatch.setattr(game_service, "_close_cons_if_complete", fail_after_close)
+    monkeypatch.setattr(game_service.arguments, "_close_cons_if_complete", fail_after_close)
     with pytest.raises(RuntimeError):
         game_service.make_con(
             db_engine,
@@ -702,13 +702,13 @@ def test_final_pass_failure_rolls_back_participation_and_phase(
     argument_id = _make_current_argument(db_engine, game_id)
     game_service.pass_con(
         db_engine, game_id, argument_id=argument_id, actor_id="belvar")
-    real_close = game_service._close_cons_if_complete
+    real_close = game_service.arguments._close_cons_if_complete
 
     def fail_after_close(session, game, argument):  # noqa: ANN001
         real_close(session, game, argument)
         raise RuntimeError("injected after closure mutation")
 
-    monkeypatch.setattr(game_service, "_close_cons_if_complete", fail_after_close)
+    monkeypatch.setattr(game_service.arguments, "_close_cons_if_complete", fail_after_close)
     with pytest.raises(RuntimeError):
         game_service.pass_con(
             db_engine, game_id, argument_id=argument_id, actor_id="cestia")

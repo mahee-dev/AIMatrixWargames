@@ -93,7 +93,7 @@ def test_i053_007_new_turn_resets_round_counter(db_engine: Engine) -> None:
         assert game is not None
         game.diplomacy_rounds_completed = 2
         game.turn = 2
-        game_service._start_turn(session, game, turn=2)
+        game_service.turns._start_turn(session, game, turn=2)
         session.add(game)
         session.commit()
     with Session(db_engine) as session:

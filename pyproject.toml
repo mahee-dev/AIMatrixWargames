@@ -69,7 +69,8 @@ build-backend = "setuptools.build_meta"
 # Flat layout: the code packages sit at the repository root (TRD §5). ``amaw_resources`` is the
 # deliberately small runtime-data namespace; maintainer docs and archived scenarios stay out.
 packages = [
-    "app", "agents", "benchmark", "aar", "observer", "observer.screens", "amaw_resources",
+    "app", "app.game_service", "agents", "benchmark", "aar", "observer", "observer.screens",
+    "amaw_resources",
 ]
 # The CLI is a single top-level module (not pre-split into a package — TRD §5), kept out of the
 # engine packages above so the `app/` import boundary holds as it grows.

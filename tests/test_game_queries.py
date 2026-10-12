@@ -67,4 +67,4 @@ def test_i064_003_context_imports_queries_not_mutation_service() -> None:
         for alias in node.names
     }
     assert "game_queries" in app_imports
-    assert game_service.eligible_con_actor_ids is game_queries.eligible_con_actor_ids
+    assert game_service.arguments.eligible_con_actor_ids is game_queries.eligible_con_actor_ids

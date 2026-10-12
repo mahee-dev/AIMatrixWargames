@@ -362,7 +362,7 @@ def test_event_and_state_roll_back_together(
             raise RuntimeError("injected event failure")
         return real_create(session, entity)
 
-    monkeypatch.setattr(game_service.persistence, "create", failing_create)
+    monkeypatch.setattr(persistence, "create", failing_create)
     with pytest.raises(RuntimeError):
         game_service.send_message(
             db_engine, game_id, sender_actor_id="arkania", text="hi", public=True

@@ -468,7 +468,7 @@ def test_umpire_context_carries_every_actors_private_facts(db_engine: Engine) ->
     with session_scope(db_engine) as session:
         game = session.get(Game, creation.game_id)
         argument = session.get(Argument, accepted.id)
-        context = game_service._build_umpire_context(session, game, argument)
+        context = game_service.adjudication._build_umpire_context(session, game, argument)
 
     items = context.relevant_hidden_information
     assert all(set(item) == {"kind", "actor_id", "text"} for item in items)
@@ -1232,6 +1232,6 @@ def test_umpire_context_lists_cons_in_actor_order_not_arrival_order(db_engine: E
     with session_scope(db_engine) as session:
         game = session.get(Game, creation.game_id)
         argument = session.get(Argument, accepted.id)
-        context = game_service._build_umpire_context(session, game, argument)
+        context = game_service.adjudication._build_umpire_context(session, game, argument)
 
     assert [con["actor_id"] for con in context.cons] == ["belvar", "cestia"]

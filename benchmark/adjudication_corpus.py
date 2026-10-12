@@ -36,7 +36,7 @@ import yaml
 
 from agents.umpire import RULES_AWARE_UMPIRE_PROMPT_VERSIONS, UMPIRE_PROMPT_VERSION, UMPIRE_PROMPT_VERSIONS
 from app.game_errors import InvalidAdjudication
-from app.game_service import _validate_proposal
+from app.game_service.adjudication import _validate_proposal
 from app.models import AdjudicationMode
 from app.umpire import AdjudicationContext, AdjudicationProposal, UmpireAdjudication
 
